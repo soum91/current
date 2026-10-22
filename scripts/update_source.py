@@ -21,7 +21,7 @@ def main() -> None:
     app = next(item for item in source["apps"] if item["bundleIdentifier"] == "com.soum91.current")
 
     new_version = {
-        "version": base_version,
+        "version": f"{base_version}.{build_number}",
         "buildVersion": build_number,
         "date": datetime.now(timezone.utc).date().isoformat(),
         "localizedDescription": "Automated build of Current for iPhone.",
@@ -34,13 +34,14 @@ def main() -> None:
     }
     app["versions"] = [
         new_version,
-        *[
-            v
-            for v in app["versions"]
-            if v["buildVersion"] != build_number
-            and len(v["version"].split(".")) == 3
-        ],
-    ]
+        *[v for v in app["versions"] if v["buildVersion"] != build_number],
+    ][:25]
+    # Older sideloading clients read the current version from flat app fields.
+    app["version"] = new_version["version"]
+    app["versionDate"] = new_version["date"]
+    app["versionDescription"] = new_version["localizedDescription"]
+    app["downloadURL"] = new_version["downloadURL"]
+    app["size"] = new_version["size"]
     source_path.write_text(json.dumps(source, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

@@ -52,14 +52,17 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$WIDGET/Info.plist"
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
-          # Keep Apple's three-component marketing version unchanged. CFBundleVersion
-          # is the separate, monotonically increasing build number for updates.
+          # Match the Obsidian sideload release convention: 1.0.0.<build>.
+          # Both app and extension must advertise the same version as the source.
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION.$BUILD" "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION.$BUILD" "$WIDGET/Info.plist"
           codesign --force --sign - --timestamp=none --entitlements CurrentWidget/CurrentWidget.entitlements "$WIDGET"
           codesign --force --sign - --timestamp=none --entitlements Current/Current.entitlements "$APP"
           IPA="Current-$VERSION-build-$BUILD.ipa"
           zip -qr "$IPA" Payload
           echo "ipa=$IPA" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "display_version=$VERSION.$BUILD" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -70,7 +73,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Current ${{ steps.ipa.outputs.version }} build ${{ github.run_number }}
+          name: Current ${{ steps.ipa.outputs.display_version }}
           make_latest: true
           body: |
             iOS 18+ SwiftUI network throughput monitor with a Dynamic Island Live Activity.
