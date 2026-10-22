@@ -46,17 +46,16 @@ struct CurrentLiveActivity: Widget {
             } compactTrailing: {
                 compactSpeed(context, down: false)
             } minimal: {
-                HStack(spacing: 2) {
-                    Image(systemName: "arrow.down")
-                    Text(isFresh(context)
-                         ? SpeedFormat.rate(context.state.downloadBytesPerSecond, unit: context.state.unit, compact: true)
-                         : "--")
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                Text(isFresh(context)
+                     ? SpeedFormat.minimalRate(context.state.downloadBytesPerSecond, unit: context.state.unit)
+                     : "--")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(width: 28)
                 .foregroundStyle(isFresh(context) ? IslandColor.down : .gray)
+                .accessibilityLabel("Download speed")
             }
             .widgetURL(URL(string: "current://open"))
         }
@@ -72,8 +71,8 @@ struct CurrentLiveActivity: Widget {
         return HStack(spacing: 3) {
             Image(systemName: down ? "arrow.down" : "arrow.up")
                 .font(.system(size: 10, weight: .bold))
-            Text(isFresh(context) ? SpeedFormat.rate(value, unit: context.state.unit, compact: true) : "--")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
+            Text(isFresh(context) ? SpeedFormat.minimalRate(value, unit: context.state.unit) : "--")
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)

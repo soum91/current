@@ -1,5 +1,6 @@
 import ActivityKit
 import Foundation
+import Network
 import SwiftUI
 import WidgetKit
 
@@ -49,6 +50,7 @@ final class SpeedStore: ObservableObject {
     }
 
     private let backgroundLocation = BackgroundLocationController()
+    private var pathMonitor: NWPathMonitor?
     private var measuringTask: Task<Void, Never>?
     private var previous: [String: InterfaceSampler.Counters]?
     private var previousDate: Date?
@@ -72,6 +74,29 @@ final class SpeedStore: ObservableObject {
             if let error { self.errorMessage = error }
             if !running && self.isInBackground { self.pauseMeasuring() }
         }
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            let label: String
+            if path.status != .satisfied {
+                label = "No connection"
+            } else {
+                switch (path.usesInterfaceType(.wifi), path.usesInterfaceType(.cellular)) {
+                case (true, true): label = "Wi-Fi + Cellular"
+                case (true, false): label = "Wi-Fi"
+                case (false, true): label = "Cellular"
+                default: label = "Connected"
+                }
+            }
+            Task { @MainActor [weak self] in
+                self?.interfaceLabel = label
+            }
+        }
+        pathMonitor = monitor
+        monitor.start(queue: DispatchQueue(label: "com.soum91.current.network-path"))
+    }
+
+    deinit {
+        pathMonitor?.cancel()
     }
 
     func startMeasuring() {
@@ -81,7 +106,6 @@ final class SpeedStore: ObservableObject {
         previous = InterfaceSampler.snapshot()
         previousDate = .now
         isMeasuring = true
-        interfaceLabel = InterfaceSampler.label(for: Set(previous?.keys.map { $0 } ?? []))
         restartPollingTask()
         publishWidgetSnapshot(force: true)
         Task { await updateActivity(force: true) }
@@ -143,7 +167,6 @@ final class SpeedStore: ObservableObject {
             previous = current
             previousDate = now
         }
-        interfaceLabel = InterfaceSampler.label(for: Set(current.keys))
         guard let previous, let previousDate else { return }
         let elapsed = now.timeIntervalSince(previousDate)
         guard elapsed > 0.05 && elapsed < 10 else { return }

@@ -40,6 +40,28 @@ enum SpeedFormat {
         return numeric + (compact ? compactSuffixes[level] : " " + suffixes[level])
     }
 
+    /// Four characters or fewer so the secondary Dynamic Island can show a rate.
+    static func minimalRate(_ bytesPerSecond: Double, unit: SpeedUnit) -> String {
+        var value = max(0, bytesPerSecond) * (unit == .bits ? 8 : 1)
+        var level = 0
+        while value >= 1_000 && level < 3 {
+            value /= 1_000
+            level += 1
+        }
+        if value >= 999.5 && level < 3 {
+            value /= 1_000
+            level += 1
+        }
+        let amount: String
+        if value >= 10 || level == 0 {
+            amount = String(format: "%.0f", value)
+        } else {
+            amount = String(format: "%.1f", value)
+        }
+        let suffix = level == 0 ? (unit == .bits ? "b" : "B") : ["", "K", "M", "G"][level]
+        return amount + suffix
+    }
+
     static func amount(_ bytes: UInt64) -> String {
         ByteCountFormatter.string(fromByteCount: Int64(clamping: bytes), countStyle: .decimal)
     }

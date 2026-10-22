@@ -142,11 +142,8 @@ struct HomeView: View {
                         .foregroundStyle(.white.opacity(0.42))
                 }
                 Spacer(minLength: 4)
-                HStack(spacing: 3) {
-                    Image(systemName: "arrow.down")
-                    Text(SpeedFormat.rate(store.download, unit: store.unit, compact: true))
-                }
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                Text(SpeedFormat.minimalRate(store.download, unit: store.unit))
+                .font(.system(size: 10, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Theme.download)
                 .padding(.horizontal, 10)

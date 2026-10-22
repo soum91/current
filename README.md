@@ -11,6 +11,7 @@ Designed for iPhone 17 on iOS 27, with iOS 18 as the minimum deployment target.
 - **Home Screen widgets** in small and medium sizes, showing the latest stored measurements. WidgetKit chooses when to refresh them.
 - **Experimental background monitoring** via an optional low-accuracy location session. The session is never enabled without the user's choice, and Current never stores or uploads location coordinates.
 - **One-minute chart** of observed transfer rates and data transferred during the current foreground monitoring session.
+- **Connection type** from the active Network framework path rather than treating every present Wi-Fi and cellular interface as currently carrying traffic.
 - **Bytes or bits** display settings. No user account or network permissions required.
 - **Privacy-first**: all calculations happen on the phone; the app makes no network requests of its own.
 
@@ -26,6 +27,7 @@ Current is intentionally honest about the operating system's restrictions:
 6. This version does **not** guarantee 24/7 system-wide throughput monitoring. A VPN packet tunnel would also change the device's network path and is not silently enabled here.
 
 When another app also starts a Live Activity, iOS may render Current as the smaller, detached minimal bubble. Apps cannot force the secondary position, and a second fake activity is not started to manipulate this layout.
+The small Island view uses a four-character download-rate abbreviation to fit inside Apple's most restrictive minimal presentation. Open the expanded view to see both upload and download rates.
 
 The background location option is experimental and intended for private sideload testing. Apple's App Store rules permit background services only for their intended purposes, so using location solely for network monitoring is not appropriate for App Store distribution.
 
