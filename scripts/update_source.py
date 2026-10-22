@@ -21,7 +21,7 @@ def main() -> None:
     app = next(item for item in source["apps"] if item["bundleIdentifier"] == "com.soum91.current")
 
     new_version = {
-        "version": f"{base_version}.{build_number}",
+        "version": base_version,
         "buildVersion": build_number,
         "date": datetime.now(timezone.utc).date().isoformat(),
         "localizedDescription": "Automated build of Current for iPhone.",
@@ -34,7 +34,12 @@ def main() -> None:
     }
     app["versions"] = [
         new_version,
-        *[v for v in app["versions"] if v["buildVersion"] != build_number],
+        *[
+            v
+            for v in app["versions"]
+            if v["buildVersion"] != build_number
+            and len(v["version"].split(".")) == 3
+        ],
     ]
     source_path.write_text(json.dumps(source, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
