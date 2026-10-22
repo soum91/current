@@ -21,6 +21,15 @@
       "category": "utilities",
       "versions": [
         {
+          "version": "1.0.0.8",
+          "buildVersion": "8",
+          "date": "2026-10-22",
+          "localizedDescription": "Automated build of Current for iPhone.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-8/Current-1.0.0-build-8.ipa",
+          "size": 557417,
+          "minOSVersion": "18.0"
+        },
+        {
           "version": "1.0.0.7",
           "buildVersion": "7",
           "date": "2026-10-22",
@@ -71,11 +80,11 @@
           "com.apple.security.application-groups"
         ]
       },
-      "version": "1.0.0.7",
+      "version": "1.0.0.8",
       "versionDate": "2026-10-22",
       "versionDescription": "Automated build of Current for iPhone.",
-      "downloadURL": "https://github.com/soum91/current/releases/download/build-7/Current-1.0.0-build-7.ipa",
-      "size": 572186
+      "downloadURL": "https://github.com/soum91/current/releases/download/build-8/Current-1.0.0-build-8.ipa",
+      "size": 557417
     }
   ],
   "news": []
