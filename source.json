@@ -1,0 +1,40 @@
+{
+  "name": "Current",
+  "subtitle": "Network speeds for your Dynamic Island",
+  "description": "The official Current source for AltStore Classic, SideStore and FlareStore. Download the latest iPhone build and receive version updates from the Current GitHub releases.",
+  "iconURL": "https://raw.githubusercontent.com/soum91/current/main/Current/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+  "website": "https://github.com/soum91/current",
+  "sourceURL": "https://raw.githubusercontent.com/soum91/current/main/source.json",
+  "tintColor": "#61E8C7",
+  "featuredApps": [
+    "com.soum91.current"
+  ],
+  "apps": [
+    {
+      "name": "Current",
+      "bundleIdentifier": "com.soum91.current",
+      "developerName": "soum91",
+      "subtitle": "Upload and download speeds at a glance",
+      "localizedDescription": "Current measures Wi-Fi and cellular interface traffic while the app is active, with a live chart and an ActivityKit display in the Dynamic Island and on the Lock Screen. iOS can suspend monitoring in the background, so the Live Activity marks old readings as paused rather than pretending they are live. Requires iOS 18 or later. The IPA must be signed by your sideloading tool, including the widget extension.",
+      "iconURL": "https://raw.githubusercontent.com/soum91/current/main/Current/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "tintColor": "#61E8C7",
+      "category": "utilities",
+      "versions": [
+        {
+          "version": "1.0.0.1",
+          "buildVersion": "1",
+          "date": "2026-10-22",
+          "localizedDescription": "Initial release with network speed monitoring and Dynamic Island Live Activity.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-1/Current-1.0.0-build-1.ipa",
+          "size": 510155,
+          "minOSVersion": "18.0"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}

@@ -23,10 +23,20 @@ Current is intentionally honest about the operating system's restrictions:
 
 Interface totals are device-wide and include other apps' network traffic, but exclude tunnel and loopback interfaces to avoid common double-counting. VPN traffic, Wi-Fi Assist, tethering and some devices' interface naming can affect totals. The counters are not a substitute for carrier billing records.
 
+## AltStore / FlareStore source
+
+Add this URL as a source in FlareStore, AltStore Classic or SideStore:
+
+```text
+https://raw.githubusercontent.com/soum91/current/main/source.json
+```
+
+This source lists the real Current IPA from GitHub Releases, including its matching bundle ID, version and download size. The build workflow updates `source.json` after every successful release so the newest build appears first. The source is for classic IPA sideloading, not AltStore PAL marketplace notarization.
+
 ## Setup
 
-1. Download the latest `.ipa` from [Releases](https://github.com/soum91/current/releases).
-2. Install it on your non-jailbroken iPhone through a sideloading tool that supports app extensions (AltStore, SideStore, Sideloadly or FlareStore). Keep `CurrentWidget.appex` in the package.
+1. Add the source URL above in FlareStore, AltStore Classic or SideStore, then choose **Current**. Alternatively download the latest `.ipa` from [Releases](https://github.com/soum91/current/releases).
+2. Install it with a sideloading tool that supports app extensions. Keep `CurrentWidget.appex` in the package.
 3. Open Current, allow Live Activities if iOS asks, and tap **Show in Dynamic Island**.
 4. Switch to other apps to see the Live Activity's last available reading, which will be labeled paused once updates stop.
 
@@ -35,6 +45,8 @@ The source is provided for personal use and testing. The IPA published by GitHub
 ## Build
 
 Every push to `main` builds `Current-<version>-build-<N>.ipa` on GitHub Actions and publishes it as `build-N` in Releases. The app and its ActivityKit widget extension are included.
+
+After a successful release, the workflow updates the app version, download URL and file size in `source.json` and commits the refreshed source back to `main`.
 
 For a local Mac build:
 

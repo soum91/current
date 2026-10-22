@@ -79,3 +79,18 @@ jobs:
 
             **Important:** iOS limits updates to Live Activities after the app is suspended. Current marks stale readings as paused; it cannot promise permanent second-by-second speeds over other apps.
           files: ${{ steps.ipa.outputs.ipa }}
+
+      - name: Refresh AltStore and FlareStore source
+        env:
+          IPA: ${{ steps.ipa.outputs.ipa }}
+          VERSION: ${{ steps.ipa.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 scripts/update_source.py "$IPA" "$VERSION" "$BUILD_NUMBER"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update app source for build $BUILD_NUMBER [skip ci]"
+            git push origin HEAD:main
+          fi
