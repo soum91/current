@@ -12,7 +12,13 @@ struct CurrentApp: App {
                 .preferredColorScheme(.dark)
                 .onAppear { store.startMeasuring() }
                 .onOpenURL { _ in store.startMeasuring() }
-                .onChange(of: scenePhase) { phase in store.scenePhaseChanged(phase) }
+                .onChange(of: scenePhase) { phase in
+                    switch phase {
+                    case .active: store.startMeasuring()
+                    case .background: store.pauseMeasuring()
+                    default: break
+                    }
+                }
         }
     }
 }

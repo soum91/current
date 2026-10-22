@@ -51,25 +51,6 @@ struct SettingsView: View {
                         }
                         .card()
 
-                        VStack(alignment: .leading, spacing: 14) {
-                            SectionTitle(text: "Experimental background monitoring")
-                            Toggle("Keep monitoring when leaving Current", isOn: $store.backgroundModeEnabled)
-                                .tint(Theme.download)
-                            HStack(spacing: 7) {
-                                Circle()
-                                    .fill(store.backgroundLocationActive ? Theme.download : .orange)
-                                    .frame(width: 7, height: 7)
-                                Text(store.backgroundLocationActive ? "Location session active" : "Location session inactive")
-                                    .font(.caption)
-                                    .foregroundStyle(.white.opacity(0.65))
-                            }
-                            Text("Uses low-accuracy location updates to request background execution. Current does not store or transmit your location. iOS may show a location indicator, battery use can increase, and updates may still stop when iOS suspends the app.")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.55))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .card()
-
                         VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "Home Screen widgets")
                             Label("Small and medium speed widgets", systemImage: "square.grid.2x2")
@@ -85,8 +66,8 @@ struct SettingsView: View {
                             SectionTitle(text: "How it works")
                             Label("Samples every \(store.sampleInterval.formatted()) seconds", systemImage: "waveform.path.ecg")
                             Label("Island update requests every \(store.activityUpdateInterval.formatted()) seconds", systemImage: "capsule")
-                            Label("Experimental background monitoring is optional", systemImage: "location")
-                            Text("Apple controls Dynamic Island and widget refresh timing. Even with background location enabled, Current cannot guarantee uninterrupted measurements.")
+                            Label("Measurements pause when Current is suspended", systemImage: "pause.circle")
+                            Text("Apple controls Dynamic Island and widget refresh timing. Current cannot guarantee uninterrupted measurements while other apps are open.")
                                 .font(.subheadline)
                                 .foregroundStyle(.white.opacity(0.55))
                         }

@@ -142,9 +142,8 @@ struct HomeView: View {
                         .foregroundStyle(.white.opacity(0.42))
                 }
                 Spacer(minLength: 4)
-                Text(SpeedFormat.minimalRate(store.download, unit: store.unit))
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .monospacedDigit()
+                Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(Theme.download)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 10)
@@ -166,7 +165,7 @@ struct HomeView: View {
                             in: RoundedRectangle(cornerRadius: 15, style: .continuous))
             }
 
-            Text("iOS limits background updates. Try experimental background monitoring in Settings, or leave it off to pause when Current is backgrounded. Stale readings are marked paused.")
+            Text("iOS limits background updates. Measurements pause when Current is backgrounded, and stale readings are marked paused.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.52))
                 .fixedSize(horizontal: false, vertical: true)

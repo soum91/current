@@ -21,19 +21,12 @@ final class SpeedStore: ObservableObject {
     @Published private(set) var interfaceLabel = "Checking network"
     @Published private(set) var isMeasuring = false
     @Published private(set) var hasLiveActivity = false
-    @Published private(set) var backgroundLocationActive = false
     @Published var errorMessage: String?
     @Published var unit: SpeedUnit {
         didSet {
             UserDefaults.standard.set(unit.rawValue, forKey: "speedUnit")
             publishWidgetSnapshot(force: true)
             Task { await updateActivity(force: true) }
-        }
-    }
-    @Published var backgroundModeEnabled: Bool {
-        didSet {
-            UserDefaults.standard.set(backgroundModeEnabled, forKey: "backgroundModeEnabled")
-            syncBackgroundLocation()
         }
     }
     @Published var sampleInterval: Double {
@@ -49,7 +42,6 @@ final class SpeedStore: ObservableObject {
         }
     }
 
-    private let backgroundLocation = BackgroundLocationController()
     private var pathMonitor: NWPathMonitor?
     private var measuringTask: Task<Void, Never>?
     private var previous: [String: InterfaceSampler.Counters]?
@@ -58,22 +50,14 @@ final class SpeedStore: ObservableObject {
     private var activityUpdatePending = false
     private var lastWidgetSnapshot = Date.distantPast
     private var lastWidgetReload = Date.distantPast
-    private var isInBackground = false
 
     init() {
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
-        self.backgroundModeEnabled = UserDefaults.standard.bool(forKey: "backgroundModeEnabled")
         let savedSampleInterval = UserDefaults.standard.double(forKey: "sampleInterval")
         self.sampleInterval = [0.25, 0.5, 1.0, 2.0].contains(savedSampleInterval) ? savedSampleInterval : 0.5
         let savedActivityInterval = UserDefaults.standard.double(forKey: "activityUpdateInterval")
         self.activityUpdateInterval = [0.5, 1.0, 2.0, 5.0].contains(savedActivityInterval) ? savedActivityInterval : 1.0
         self.hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
-        backgroundLocation.onStatusChange = { [weak self] running, error in
-            guard let self else { return }
-            self.backgroundLocationActive = running
-            if let error { self.errorMessage = error }
-            if !running && self.isInBackground { self.pauseMeasuring() }
-        }
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let label: String
@@ -100,7 +84,6 @@ final class SpeedStore: ObservableObject {
     }
 
     func startMeasuring() {
-        if backgroundModeEnabled && !isInBackground { backgroundLocation.enable() }
         guard measuringTask == nil else { return }
         hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
         previous = InterfaceSampler.snapshot()
@@ -121,30 +104,6 @@ final class SpeedStore: ObservableObject {
                 guard let self else { break }
                 self.poll()
             }
-        }
-    }
-
-    func scenePhaseChanged(_ phase: ScenePhase) {
-        switch phase {
-        case .active:
-            isInBackground = false
-            startMeasuring()
-        case .background:
-            isInBackground = true
-            if !backgroundModeEnabled || !backgroundLocationActive {
-                pauseMeasuring()
-            }
-        default:
-            break
-        }
-    }
-
-    private func syncBackgroundLocation() {
-        if backgroundModeEnabled && !isInBackground {
-            backgroundLocation.enable()
-        } else if !backgroundModeEnabled {
-            backgroundLocation.disable()
-            if isInBackground { pauseMeasuring() }
         }
     }
 
