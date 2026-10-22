@@ -35,6 +35,18 @@ final class SpeedStore: ObservableObject {
             syncBackgroundLocation()
         }
     }
+    @Published var sampleInterval: Double {
+        didSet {
+            UserDefaults.standard.set(sampleInterval, forKey: "sampleInterval")
+            if isMeasuring { restartPollingTask() }
+        }
+    }
+    @Published var activityUpdateInterval: Double {
+        didSet {
+            UserDefaults.standard.set(activityUpdateInterval, forKey: "activityUpdateInterval")
+            Task { await updateActivity(force: true) }
+        }
+    }
 
     private let backgroundLocation = BackgroundLocationController()
     private var measuringTask: Task<Void, Never>?
@@ -49,6 +61,10 @@ final class SpeedStore: ObservableObject {
     init() {
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
         self.backgroundModeEnabled = UserDefaults.standard.bool(forKey: "backgroundModeEnabled")
+        let savedSampleInterval = UserDefaults.standard.double(forKey: "sampleInterval")
+        self.sampleInterval = [0.25, 0.5, 1.0, 2.0].contains(savedSampleInterval) ? savedSampleInterval : 0.5
+        let savedActivityInterval = UserDefaults.standard.double(forKey: "activityUpdateInterval")
+        self.activityUpdateInterval = [0.5, 1.0, 2.0, 5.0].contains(savedActivityInterval) ? savedActivityInterval : 1.0
         self.hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
         backgroundLocation.onStatusChange = { [weak self] running, error in
             guard let self else { return }
@@ -66,16 +82,22 @@ final class SpeedStore: ObservableObject {
         previousDate = .now
         isMeasuring = true
         interfaceLabel = InterfaceSampler.label(for: Set(previous?.keys.map { $0 } ?? []))
+        restartPollingTask()
+        publishWidgetSnapshot(force: true)
+        Task { await updateActivity(force: true) }
+    }
+
+    private func restartPollingTask() {
+        measuringTask?.cancel()
         measuringTask = Task { [weak self] in
             while !Task.isCancelled {
-                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+                guard let interval = self?.sampleInterval else { break }
+                do { try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000)) }
                 catch { break }
                 guard let self else { break }
                 self.poll()
             }
         }
-        publishWidgetSnapshot(force: true)
-        Task { await updateActivity(force: true) }
     }
 
     func scenePhaseChanged(_ phase: ScenePhase) {
@@ -124,7 +146,7 @@ final class SpeedStore: ObservableObject {
         interfaceLabel = InterfaceSampler.label(for: Set(current.keys))
         guard let previous, let previousDate else { return }
         let elapsed = now.timeIntervalSince(previousDate)
-        guard elapsed > 0.25 && elapsed < 10 else { return }
+        guard elapsed > 0.05 && elapsed < 10 else { return }
 
         let delta = InterfaceSampler.difference(from: previous, to: current)
         download = Double(delta.received) / elapsed
@@ -132,11 +154,12 @@ final class SpeedStore: ObservableObject {
         totalDownload &+= delta.received
         totalUpload &+= delta.sent
         samples.append(SpeedSample(time: now, download: download, upload: upload))
-        if samples.count > 60 { samples.removeFirst(samples.count - 60) }
+        // Keep an actual one-minute window regardless of sampling frequency.
+        samples.removeAll { now.timeIntervalSince($0.time) > 60 }
 
         publishWidgetSnapshot()
 
-        if hasLiveActivity && now.timeIntervalSince(lastActivityUpdate) >= 5 {
+        if hasLiveActivity && now.timeIntervalSince(lastActivityUpdate) >= activityUpdateInterval {
             Task { await updateActivity() }
         }
     }
@@ -199,7 +222,7 @@ final class SpeedStore: ObservableObject {
 
     private func updateActivity(force: Bool = false) async {
         guard hasLiveActivity, !activityUpdatePending else { return }
-        if !force && Date().timeIntervalSince(lastActivityUpdate) < 5 { return }
+        if !force && Date().timeIntervalSince(lastActivityUpdate) < activityUpdateInterval { return }
         activityUpdatePending = true
         defer { activityUpdatePending = false }
         let content = ActivityContent(

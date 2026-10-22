@@ -6,8 +6,8 @@ Designed for iPhone 17 on iOS 27, with iOS 18 as the minimum deployment target.
 
 ## What it does
 
-- **Upload and download speeds** from kernel-maintained Wi-Fi (`en*`) and cellular (`pdp_ip*`) interface byte counters, sampled every second while the app is running.
-- **Live Activity** in the Dynamic Island and on the Lock Screen, with compact and expanded upload/download readouts.
+- **Upload and download speeds** from kernel-maintained Wi-Fi (`en*`) and cellular (`pdp_ip*`) interface byte counters. Set sampling to 0.25, 0.5, 1 or 2 seconds (0.5 seconds by default).
+- **Live Activity** in the Dynamic Island and on the Lock Screen, with compact and expanded upload/download readouts and a minimal download-speed bubble when iOS chooses the secondary presentation. Set Live Activity update attempts to 0.5, 1, 2 or 5 seconds (1 second by default).
 - **Home Screen widgets** in small and medium sizes, showing the latest stored measurements. WidgetKit chooses when to refresh them.
 - **Experimental background monitoring** via an optional low-accuracy location session. The session is never enabled without the user's choice, and Current never stores or uploads location coordinates.
 - **One-minute chart** of observed transfer rates and data transferred during the current foreground monitoring session.
@@ -19,11 +19,13 @@ Designed for iPhone 17 on iOS 27, with iOS 18 as the minimum deployment target.
 Current is intentionally honest about the operating system's restrictions:
 
 1. The measurement is live while Current is in the foreground.
-2. The app attempts a Live Activity update every five seconds while it can execute. iOS may coalesce or throttle those updates.
+2. The app attempts Live Activity updates at the chosen interval while it can execute. iOS may coalesce or throttle those updates; the chosen interval is not a guaranteed screen refresh rate.
 3. Experimental mode uses Core Location's standard, low-accuracy background updates (`UIBackgroundModes=location`, `allowsBackgroundLocationUpdates=true`) to *attempt* continued execution while other apps are open. It requires When In Use location permission, shows the system location indicator and may consume extra battery. It may not keep running forever; iOS remains in control.
-4. Once iOS suspends the app, it cannot sample traffic every second. The Live Activity marks the values **Paused** or replaces them with `--` when its last update is stale.
+4. Once iOS suspends the app, it cannot sample traffic. The Live Activity marks the values **Paused** or replaces them with `--` when its last update is stale.
 5. A Home Screen widget is a last-sample display, not a keep-alive mechanism. It is refreshed on WidgetKit's schedule, not per second.
 6. This version does **not** guarantee 24/7 system-wide throughput monitoring. A VPN packet tunnel would also change the device's network path and is not silently enabled here.
+
+When another app also starts a Live Activity, iOS may render Current as the smaller, detached minimal bubble. Apps cannot force the secondary position, and a second fake activity is not started to manipulate this layout.
 
 The background location option is experimental and intended for private sideload testing. Apple's App Store rules permit background services only for their intended purposes, so using location solely for network monitoring is not appropriate for App Store distribution.
 
@@ -72,7 +74,7 @@ In Xcode, use your own signing team for the app and widget target. Both targets 
 | Component | Purpose |
 | --- | --- |
 | `Current/Model/InterfaceSampler.swift` | Read `getifaddrs` kernel interface counters and compute safe byte deltas |
-| `Current/Model/SpeedStore.swift` | One-second polling, chart history and ActivityKit lifecycle |
+| `Current/Model/SpeedStore.swift` | Configurable polling and Live Activity update intervals, one-minute chart history and ActivityKit lifecycle |
 | `Shared/SpeedActivityAttributes.swift` | Shared, codable speed values and formatting |
 | `CurrentWidget/CurrentWidget.swift` | Lock Screen, compact/expanded/minimal Dynamic Island layouts |
 | `CurrentWidget/CurrentSpeedWidget.swift` | Home Screen widgets with last-sample display and stale-state handling |
@@ -84,7 +86,7 @@ In Xcode, use your own signing team for the app and widget target. Both targets 
 
 - Uses public Apple APIs (`getifaddrs`, ActivityKit, WidgetKit and Swift Charts).
 - No private frameworks or jailbreak injection.
-- No dedicated background capability is requested. Live Activities themselves do not grant arbitrary background execution time.
+- The optional location background mode does not guarantee continuous execution. Live Activities themselves do not grant arbitrary background execution time.
 
 Independent project. Not affiliated with Apple.
 

@@ -69,7 +69,7 @@ struct HomeView: View {
             HStack {
                 SectionTitle(text: "Live throughput")
                 Spacer()
-                Text("1 s samples")
+                Text("\(store.sampleInterval.formatted()) s samples")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.white.opacity(0.38))
             }
@@ -130,6 +130,29 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
             .background(Color.black, in: Capsule())
             .accessibilityLabel("Dynamic Island preview")
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("SECONDARY ISLAND")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(1)
+                        .foregroundStyle(.white.opacity(0.48))
+                    Text("When iOS shows another Live Activity")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.42))
+                }
+                Spacer(minLength: 4)
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.down")
+                    Text(SpeedFormat.rate(store.download, unit: store.unit, compact: true))
+                }
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(Theme.download)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 10)
+                .background(Color.black, in: Capsule())
+            }
 
             Button {
                 Task { await store.toggleLiveActivity() }

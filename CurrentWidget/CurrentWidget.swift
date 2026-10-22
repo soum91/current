@@ -46,9 +46,17 @@ struct CurrentLiveActivity: Widget {
             } compactTrailing: {
                 compactSpeed(context, down: false)
             } minimal: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(IslandColor.down)
+                HStack(spacing: 2) {
+                    Image(systemName: "arrow.down")
+                    Text(isFresh(context)
+                         ? SpeedFormat.rate(context.state.downloadBytesPerSecond, unit: context.state.unit, compact: true)
+                         : "--")
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(isFresh(context) ? IslandColor.down : .gray)
             }
             .widgetURL(URL(string: "current://open"))
         }
