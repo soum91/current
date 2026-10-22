@@ -21,21 +21,12 @@
       "category": "utilities",
       "versions": [
         {
-          "version": "1.0.0.2",
-          "buildVersion": "2",
+          "version": "1.0.0",
+          "buildVersion": "3",
           "date": "2026-10-22",
           "localizedDescription": "Automated build of Current for iPhone.",
-          "downloadURL": "https://github.com/soum91/current/releases/download/build-2/Current-1.0.0-build-2.ipa",
-          "size": 510152,
-          "minOSVersion": "18.0"
-        },
-        {
-          "version": "1.0.0.1",
-          "buildVersion": "1",
-          "date": "2026-10-22",
-          "localizedDescription": "Initial release with network speed monitoring and Dynamic Island Live Activity.",
-          "downloadURL": "https://github.com/soum91/current/releases/download/build-1/Current-1.0.0-build-1.ipa",
-          "size": 510155,
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-3/Current-1.0.0-build-3.ipa",
+          "size": 510151,
           "minOSVersion": "18.0"
         }
       ],
