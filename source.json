@@ -15,7 +15,7 @@
       "bundleIdentifier": "com.soum91.current",
       "developerName": "soum91",
       "subtitle": "Upload and download speeds at a glance",
-      "localizedDescription": "Current measures Wi-Fi and cellular interface traffic while the app is active, with a live chart and an ActivityKit display in the Dynamic Island and on the Lock Screen. iOS can suspend monitoring in the background, so the Live Activity marks old readings as paused rather than pretending they are live. Requires iOS 18 or later. The IPA must be signed by your sideloading tool, including the widget extension.",
+      "localizedDescription": "Current measures Wi-Fi and cellular traffic with a live chart, a Dynamic Island Live Activity and small/medium Home Screen widgets. An optional experimental low-accuracy location session may help monitoring continue when other apps are open, but iOS can still suspend it. Current never stores or sends your location. Requires iOS 18 or later. Signing both the app and its widget with compatible App Group entitlements is necessary for shared widget readings.",
       "iconURL": "https://raw.githubusercontent.com/soum91/current/main/Current/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
       "tintColor": "#61E8C7",
       "category": "utilities",
@@ -31,8 +31,10 @@
         }
       ],
       "appPermissions": {
-        "entitlements": [],
-        "privacy": {}
+        "entitlements": ["com.apple.security.application-groups"],
+        "privacy": {
+          "NSLocationWhenInUseUsageDescription": "Current can use low-accuracy location updates, with your permission, to try to keep optional network monitoring active in the background. Current never saves or sends your location."
+        }
       }
     }
   ],

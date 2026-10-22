@@ -21,12 +21,42 @@ struct SettingsView: View {
                         }
                         .card()
 
+                        VStack(alignment: .leading, spacing: 14) {
+                            SectionTitle(text: "Experimental background monitoring")
+                            Toggle("Keep monitoring when leaving Current", isOn: $store.backgroundModeEnabled)
+                                .tint(Theme.download)
+                            HStack(spacing: 7) {
+                                Circle()
+                                    .fill(store.backgroundLocationActive ? Theme.download : .orange)
+                                    .frame(width: 7, height: 7)
+                                Text(store.backgroundLocationActive ? "Location session active" : "Location session inactive")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.65))
+                            }
+                            Text("Uses low-accuracy location updates to request background execution. Current does not store or transmit your location. iOS may show a location indicator, battery use can increase, and updates may still stop when iOS suspends the app.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.55))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .card()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionTitle(text: "Home Screen widgets")
+                            Label("Small and medium speed widgets", systemImage: "square.grid.2x2")
+                            Text("Add Current from the Home Screen widget gallery. Widgets show the most recent sample, not a continuous speed meter. iOS controls refresh timing. Shared readings require an App Group-capable signing profile for both the app and its widget extension.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.55))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .font(.subheadline)
+                        .card()
+
                         VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "How it works")
                             Label("1-second measurements inside the app", systemImage: "waveform.path.ecg")
                             Label("5-second Live Activity update attempts", systemImage: "capsule")
-                            Label("Pauses when iOS suspends Current", systemImage: "pause.circle")
-                            Text("Apple controls Dynamic Island refresh timing. A normal iOS app cannot guarantee uninterrupted system-wide speed measurements while another app is open.")
+                            Label("Experimental background monitoring is optional", systemImage: "location")
+                            Text("Apple controls Dynamic Island and widget refresh timing. Even with background location enabled, Current cannot guarantee uninterrupted measurements.")
                                 .font(.subheadline)
                                 .foregroundStyle(.white.opacity(0.55))
                         }

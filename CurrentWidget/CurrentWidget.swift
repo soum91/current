@@ -11,6 +11,7 @@ private enum IslandColor {
 struct CurrentWidgetBundle: WidgetBundle {
     var body: some Widget {
         CurrentLiveActivity()
+        CurrentSpeedWidget()
     }
 }
 

@@ -54,8 +54,8 @@ jobs:
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
           # Keep Apple's three-component marketing version unchanged. CFBundleVersion
           # is the separate, monotonically increasing build number for updates.
-          codesign --force --sign - --timestamp=none "$WIDGET"
-          codesign --force --sign - --timestamp=none "$APP"
+          codesign --force --sign - --timestamp=none --entitlements CurrentWidget/CurrentWidget.entitlements "$WIDGET"
+          codesign --force --sign - --timestamp=none --entitlements Current/Current.entitlements "$APP"
           IPA="Current-$VERSION-build-$BUILD.ipa"
           zip -qr "$IPA" Payload
           echo "ipa=$IPA" >> "$GITHUB_OUTPUT"

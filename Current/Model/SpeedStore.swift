@@ -1,6 +1,7 @@
 import ActivityKit
 import Foundation
 import SwiftUI
+import WidgetKit
 
 struct SpeedSample: Identifiable {
     let id = UUID()
@@ -19,26 +20,46 @@ final class SpeedStore: ObservableObject {
     @Published private(set) var interfaceLabel = "Checking network"
     @Published private(set) var isMeasuring = false
     @Published private(set) var hasLiveActivity = false
+    @Published private(set) var backgroundLocationActive = false
     @Published var errorMessage: String?
     @Published var unit: SpeedUnit {
         didSet {
             UserDefaults.standard.set(unit.rawValue, forKey: "speedUnit")
+            publishWidgetSnapshot(force: true)
             Task { await updateActivity(force: true) }
         }
     }
+    @Published var backgroundModeEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(backgroundModeEnabled, forKey: "backgroundModeEnabled")
+            syncBackgroundLocation()
+        }
+    }
 
+    private let backgroundLocation = BackgroundLocationController()
     private var measuringTask: Task<Void, Never>?
     private var previous: [String: InterfaceSampler.Counters]?
     private var previousDate: Date?
     private var lastActivityUpdate = Date.distantPast
     private var activityUpdatePending = false
+    private var lastWidgetSnapshot = Date.distantPast
+    private var lastWidgetReload = Date.distantPast
+    private var isInBackground = false
 
     init() {
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
+        self.backgroundModeEnabled = UserDefaults.standard.bool(forKey: "backgroundModeEnabled")
         self.hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
+        backgroundLocation.onStatusChange = { [weak self] running, error in
+            guard let self else { return }
+            self.backgroundLocationActive = running
+            if let error { self.errorMessage = error }
+            if !running && self.isInBackground { self.pauseMeasuring() }
+        }
     }
 
     func startMeasuring() {
+        if backgroundModeEnabled && !isInBackground { backgroundLocation.enable() }
         guard measuringTask == nil else { return }
         hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
         previous = InterfaceSampler.snapshot()
@@ -53,7 +74,32 @@ final class SpeedStore: ObservableObject {
                 self.poll()
             }
         }
+        publishWidgetSnapshot(force: true)
         Task { await updateActivity(force: true) }
+    }
+
+    func scenePhaseChanged(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            isInBackground = false
+            startMeasuring()
+        case .background:
+            isInBackground = true
+            if !backgroundModeEnabled || !backgroundLocationActive {
+                pauseMeasuring()
+            }
+        default:
+            break
+        }
+    }
+
+    private func syncBackgroundLocation() {
+        if backgroundModeEnabled && !isInBackground {
+            backgroundLocation.enable()
+        } else if !backgroundModeEnabled {
+            backgroundLocation.disable()
+            if isInBackground { pauseMeasuring() }
+        }
     }
 
     func pauseMeasuring() {
@@ -64,6 +110,7 @@ final class SpeedStore: ObservableObject {
         previousDate = nil
         isMeasuring = false
         // The activity remains visible, but it must not present stale rates as live.
+        publishWidgetSnapshot(force: true)
         Task { await updateActivity(force: true) }
     }
 
@@ -87,8 +134,30 @@ final class SpeedStore: ObservableObject {
         samples.append(SpeedSample(time: now, download: download, upload: upload))
         if samples.count > 60 { samples.removeFirst(samples.count - 60) }
 
+        publishWidgetSnapshot()
+
         if hasLiveActivity && now.timeIntervalSince(lastActivityUpdate) >= 5 {
             Task { await updateActivity() }
+        }
+    }
+
+    private func publishWidgetSnapshot(force: Bool = false) {
+        let now = Date()
+        guard force || now.timeIntervalSince(lastWidgetSnapshot) >= 5 else { return }
+        let saved = WidgetSpeedStorage.save(.init(
+            downloadBytesPerSecond: download,
+            uploadBytesPerSecond: upload,
+            interfaceLabel: interfaceLabel,
+            unit: unit,
+            updatedAt: now,
+            isMeasuring: isMeasuring
+        ))
+        lastWidgetSnapshot = now
+        // WidgetKit ultimately decides refresh times. Frequent requests do not
+        // turn a Home Screen widget into a real-time display.
+        if saved && (force || now.timeIntervalSince(lastWidgetReload) >= 30) {
+            WidgetCenter.shared.reloadTimelines(ofKind: WidgetSpeedStorage.kind)
+            lastWidgetReload = now
         }
     }
 

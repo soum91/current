@@ -146,7 +146,7 @@ struct HomeView: View {
                             in: RoundedRectangle(cornerRadius: 15, style: .continuous))
             }
 
-            Text("iOS limits background updates. When Current is suspended, the Island marks readings as paused instead of showing old values as live.")
+            Text("iOS limits background updates. Try experimental background monitoring in Settings, or leave it off to pause when Current is backgrounded. Stale readings are marked paused.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.52))
                 .fixedSize(horizontal: false, vertical: true)

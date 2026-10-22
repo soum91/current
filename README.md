@@ -8,6 +8,8 @@ Designed for iPhone 17 on iOS 27, with iOS 18 as the minimum deployment target.
 
 - **Upload and download speeds** from kernel-maintained Wi-Fi (`en*`) and cellular (`pdp_ip*`) interface byte counters, sampled every second while the app is running.
 - **Live Activity** in the Dynamic Island and on the Lock Screen, with compact and expanded upload/download readouts.
+- **Home Screen widgets** in small and medium sizes, showing the latest stored measurements. WidgetKit chooses when to refresh them.
+- **Experimental background monitoring** via an optional low-accuracy location session. The session is never enabled without the user's choice, and Current never stores or uploads location coordinates.
 - **One-minute chart** of observed transfer rates and data transferred during the current foreground monitoring session.
 - **Bytes or bits** display settings. No user account or network permissions required.
 - **Privacy-first**: all calculations happen on the phone; the app makes no network requests of its own.
@@ -18,8 +20,12 @@ Current is intentionally honest about the operating system's restrictions:
 
 1. The measurement is live while Current is in the foreground.
 2. The app attempts a Live Activity update every five seconds while it can execute. iOS may coalesce or throttle those updates.
-3. Once iOS suspends the app, it cannot keep sampling the device's traffic every second. The Live Activity marks the values **Paused** or replaces them with `--` when its last update is stale.
-4. This version does **not** claim 24/7 live monitoring across other apps. Achieving ongoing background monitoring would require a separate legitimately entitled background execution mechanism. A VPN packet tunnel would also change the device's network path and is not silently enabled here.
+3. Experimental mode uses Core Location's standard, low-accuracy background updates (`UIBackgroundModes=location`, `allowsBackgroundLocationUpdates=true`) to *attempt* continued execution while other apps are open. It requires When In Use location permission, shows the system location indicator and may consume extra battery. It may not keep running forever; iOS remains in control.
+4. Once iOS suspends the app, it cannot sample traffic every second. The Live Activity marks the values **Paused** or replaces them with `--` when its last update is stale.
+5. A Home Screen widget is a last-sample display, not a keep-alive mechanism. It is refreshed on WidgetKit's schedule, not per second.
+6. This version does **not** guarantee 24/7 system-wide throughput monitoring. A VPN packet tunnel would also change the device's network path and is not silently enabled here.
+
+The background location option is experimental and intended for private sideload testing. Apple's App Store rules permit background services only for their intended purposes, so using location solely for network monitoring is not appropriate for App Store distribution.
 
 Interface totals are device-wide and include other apps' network traffic, but exclude tunnel and loopback interfaces to avoid common double-counting. VPN traffic, Wi-Fi Assist, tethering and some devices' interface naming can affect totals. The counters are not a substitute for carrier billing records.
 
@@ -38,7 +44,10 @@ This source lists the real Current IPA from GitHub Releases, including its match
 1. Add the source URL above in FlareStore, AltStore Classic or SideStore, then choose **Current**. Alternatively download the latest `.ipa` from [Releases](https://github.com/soum91/current/releases).
 2. Install it with a sideloading tool that supports app extensions. Keep `CurrentWidget.appex` in the package.
 3. Open Current, allow Live Activities if iOS asks, and tap **Show in Dynamic Island**.
-4. Switch to other apps to see the Live Activity's last available reading, which will be labeled paused once updates stop.
+4. Optionally enable **Experimental background monitoring** in Settings, approve When In Use location permission and test switching to other apps. Without it, Current stops sampling in the background.
+5. To add a Home Screen widget, long-press your Home Screen, choose Add Widget, search for Current and select the small or medium layout.
+
+The widget shares data through App Group `group.com.soum91.current`. Both `Current.app` and `CurrentWidget.appex` must be signed with compatible App Group entitlements. Some free sideloading profiles or signing tools remove unsupported entitlements; in that case the widget may show **Open app** instead of the latest speed.
 
 The source is provided for personal use and testing. The IPA published by GitHub Actions is ad-hoc signed and will need signing compatible with your install method.
 
@@ -66,6 +75,9 @@ In Xcode, use your own signing team for the app and widget target. Both targets 
 | `Current/Model/SpeedStore.swift` | One-second polling, chart history and ActivityKit lifecycle |
 | `Shared/SpeedActivityAttributes.swift` | Shared, codable speed values and formatting |
 | `CurrentWidget/CurrentWidget.swift` | Lock Screen, compact/expanded/minimal Dynamic Island layouts |
+| `CurrentWidget/CurrentSpeedWidget.swift` | Home Screen widgets with last-sample display and stale-state handling |
+| `Shared/WidgetSpeedSnapshot.swift` | Optional App Group sharing between Current and the widget extension |
+| `Current/Model/BackgroundLocationController.swift` | Opt-in, coarse Core Location session for experimental background execution |
 | `Current/Views` | Dark glass-like SwiftUI dashboard and settings |
 
 ## Platform notes

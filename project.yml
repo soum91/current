@@ -27,6 +27,8 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSSupportsLiveActivities: true
+        NSLocationWhenInUseUsageDescription: Current can use low-accuracy location updates, with your permission, to try to keep optional network monitoring active in the background. Current never saves or sends your location.
+        UIBackgroundModes: [location]
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSceneManifest:
@@ -41,6 +43,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: Current/Current.entitlements
   CurrentWidget:
     type: app-extension
     platform: iOS
@@ -61,3 +64,4 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
         SKIP_INSTALL: YES
+        CODE_SIGN_ENTITLEMENTS: CurrentWidget/CurrentWidget.entitlements
