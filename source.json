@@ -22,6 +22,15 @@
       "versions": [
         {
           "version": "1.0.0",
+          "buildVersion": "4",
+          "date": "2026-10-22",
+          "localizedDescription": "Automated build of Current for iPhone.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-4/Current-1.0.0-build-4.ipa",
+          "size": 560612,
+          "minOSVersion": "18.0"
+        },
+        {
+          "version": "1.0.0",
           "buildVersion": "3",
           "date": "2026-10-22",
           "localizedDescription": "Automated build of Current for iPhone.",
@@ -31,7 +40,9 @@
         }
       ],
       "appPermissions": {
-        "entitlements": ["com.apple.security.application-groups"],
+        "entitlements": [
+          "com.apple.security.application-groups"
+        ],
         "privacy": {
           "NSLocationWhenInUseUsageDescription": "Current can use low-accuracy location updates, with your permission, to try to keep optional network monitoring active in the background. Current never saves or sends your location."
         }
