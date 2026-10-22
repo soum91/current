@@ -1,0 +1,63 @@
+name: Current
+options:
+  bundleIdPrefix: com.soum91
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGN_IDENTITY: ""
+targets:
+  Current:
+    type: application
+    platform: iOS
+    sources:
+      - path: Current
+      - path: Shared
+    dependencies:
+      - target: CurrentWidget
+    info:
+      path: Current/Info.plist
+      properties:
+        CFBundleDisplayName: Current
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSSupportsLiveActivities: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: com.soum91.current
+            CFBundleURLSchemes: [current]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.soum91.current
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  CurrentWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: CurrentWidget
+      - path: Shared
+    info:
+      path: CurrentWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Current
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.soum91.current.widget
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
