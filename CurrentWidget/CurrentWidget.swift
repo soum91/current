@@ -64,7 +64,9 @@ struct CurrentLiveActivity: Widget {
         return HStack(spacing: 3) {
             Image(systemName: down ? "arrow.down" : "arrow.up")
                 .font(.system(size: 10, weight: .bold))
-            Text(isFresh(context) ? SpeedFormat.rate(value, unit: context.state.unit, compact: true) : "--")
+            // Keep the last measured number visible after iOS suspends the app.
+            // The gray styling indicates that it is no longer a live reading.
+            Text(SpeedFormat.rate(value, unit: context.state.unit, compact: true))
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
@@ -80,7 +82,7 @@ struct CurrentLiveActivity: Widget {
             Label(down ? "Download" : "Upload", systemImage: down ? "arrow.down.right" : "arrow.up.right")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(color)
-            Text(isFresh(context) ? SpeedFormat.rate(value, unit: context.state.unit) : "Paused")
+            Text(SpeedFormat.rate(value, unit: context.state.unit))
                 .font(.system(size: 19, weight: .bold, design: .rounded))
                 .foregroundStyle(isFresh(context) ? .white : .gray)
                 .monospacedDigit()

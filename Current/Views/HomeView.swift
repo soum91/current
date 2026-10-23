@@ -111,6 +111,12 @@ struct HomeView: View {
                     .tracking(1)
                     .foregroundStyle(store.hasLiveActivity ? Theme.download : .white.opacity(0.45))
             }
+            HStack(spacing: 6) {
+                Image(systemName: "waveform.path.ecg")
+                Text(store.activityStatus)
+            }
+            .font(.caption)
+            .foregroundStyle(.white.opacity(0.56))
 
             HStack(spacing: 13) {
                 Image(systemName: "arrow.down")
@@ -164,6 +170,23 @@ struct HomeView: View {
                 .background(store.hasLiveActivity ? Color.white.opacity(0.10) : Theme.download,
                             in: RoundedRectangle(cornerRadius: 15, style: .continuous))
             }
+
+            if store.hasLiveActivity {
+                Button {
+                    Task { await store.restartLiveActivity() }
+                } label: {
+                    Label("Restart Live Activity", systemImage: "arrow.clockwise")
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                }
+                .tint(Theme.download)
+            }
+
+            Text("Current's Live Activity may not appear in the Island while Current itself is open. After starting it, swipe Home or switch to another app to check.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.52))
+                .fixedSize(horizontal: false, vertical: true)
 
             Text("iOS limits background updates. Measurements pause when Current is backgrounded, and stale readings are marked paused.")
                 .font(.caption)

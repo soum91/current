@@ -21,6 +21,7 @@ final class SpeedStore: ObservableObject {
     @Published private(set) var interfaceLabel = "Checking network"
     @Published private(set) var isMeasuring = false
     @Published private(set) var hasLiveActivity = false
+    @Published private(set) var activityStatus = "Off"
     @Published var errorMessage: String?
     @Published var unit: SpeedUnit {
         didSet {
@@ -50,6 +51,7 @@ final class SpeedStore: ObservableObject {
     private var activityUpdatePending = false
     private var lastWidgetSnapshot = Date.distantPast
     private var lastWidgetReload = Date.distantPast
+    private var lastActivityStateCheck = Date.distantPast
 
     init() {
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
@@ -57,7 +59,7 @@ final class SpeedStore: ObservableObject {
         self.sampleInterval = [0.25, 0.5, 1.0, 2.0].contains(savedSampleInterval) ? savedSampleInterval : 0.5
         let savedActivityInterval = UserDefaults.standard.double(forKey: "activityUpdateInterval")
         self.activityUpdateInterval = [0.5, 1.0, 2.0, 5.0].contains(savedActivityInterval) ? savedActivityInterval : 1.0
-        self.hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
+        refreshActivityStatus()
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let label: String
@@ -84,8 +86,8 @@ final class SpeedStore: ObservableObject {
     }
 
     func startMeasuring() {
+        refreshActivityStatus()
         guard measuringTask == nil else { return }
-        hasLiveActivity = !Activity<SpeedActivityAttributes>.activities.isEmpty
         previous = InterfaceSampler.snapshot()
         previousDate = .now
         isMeasuring = true
@@ -121,6 +123,10 @@ final class SpeedStore: ObservableObject {
 
     private func poll() {
         let now = Date()
+        if now.timeIntervalSince(lastActivityStateCheck) >= 2 {
+            refreshActivityStatus()
+            lastActivityStateCheck = now
+        }
         let current = InterfaceSampler.snapshot()
         defer {
             previous = current
@@ -175,30 +181,70 @@ final class SpeedStore: ObservableObject {
               isMeasuring: isMeasuring)
     }
 
-    func toggleLiveActivity() async {
-        if hasLiveActivity {
-            for activity in Activity<SpeedActivityAttributes>.activities {
-                await activity.end(ActivityContent(state: state(), staleDate: nil), dismissalPolicy: .immediate)
+    private func refreshActivityStatus() {
+        let live = Activity<SpeedActivityAttributes>.activities.first {
+            switch $0.activityState {
+            case .active, .stale: return true
+            case .ended, .dismissed: return false
+            @unknown default: return true
             }
-            hasLiveActivity = false
-            lastActivityUpdate = .distantPast
+        }
+        hasLiveActivity = live != nil
+        switch live?.activityState {
+        case .active: activityStatus = "Active in ActivityKit"
+        case .stale: activityStatus = "Stale: waiting for an update"
+        case .ended, .dismissed: activityStatus = "Off"
+        default:
+            activityStatus = ActivityAuthorizationInfo().areActivitiesEnabled
+                ? (live == nil ? "Off" : "Waiting for ActivityKit")
+                : "Live Activities disabled in iOS Settings"
+        }
+    }
+
+    func toggleLiveActivity() async {
+        refreshActivityStatus()
+        if hasLiveActivity {
+            await endLiveActivities()
             return
         }
 
+        await requestLiveActivity()
+    }
+
+    func restartLiveActivity() async {
+        await endLiveActivities()
+        // Give ActivityKit time to retire the previous request before replacing it.
+        try? await Task.sleep(nanoseconds: 250_000_000)
+        await requestLiveActivity()
+    }
+
+    private func endLiveActivities() async {
+        for activity in Activity<SpeedActivityAttributes>.activities {
+            await activity.end(ActivityContent(state: state(), staleDate: nil), dismissalPolicy: .immediate)
+        }
+        hasLiveActivity = false
+        activityStatus = "Off"
+        lastActivityUpdate = .distantPast
+    }
+
+    private func requestLiveActivity() async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             errorMessage = "Live Activities are disabled. Enable them for Current in iOS Settings."
+            refreshActivityStatus()
             return
         }
         do {
-            _ = try Activity<SpeedActivityAttributes>.request(
+            let activity = try Activity<SpeedActivityAttributes>.request(
                 attributes: SpeedActivityAttributes(),
                 content: ActivityContent(state: state(), staleDate: .now.addingTimeInterval(12)),
                 pushType: nil
             )
             hasLiveActivity = true
+            activityStatus = "Requested: \(activity.activityState)"
             lastActivityUpdate = .now
         } catch {
             errorMessage = "Could not start Live Activity: \(error.localizedDescription)"
+            refreshActivityStatus()
         }
     }
 
