@@ -148,11 +148,17 @@ struct HomeView: View {
                         .foregroundStyle(.white.opacity(0.42))
                 }
                 Spacer(minLength: 4)
-                Image(systemName: "arrow.up.arrow.down")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Theme.download)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 10)
+                VStack(spacing: 0) {
+                    Text("↓\(SpeedFormat.minimalRate(store.download, unit: store.unit))")
+                        .foregroundStyle(Theme.download)
+                    Text("↑\(SpeedFormat.minimalRate(store.upload, unit: store.unit))")
+                        .foregroundStyle(Theme.upload)
+                }
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .frame(width: 32, height: 30)
                 .background(Color.black, in: Capsule())
             }
 

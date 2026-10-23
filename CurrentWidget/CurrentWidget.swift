@@ -46,9 +46,18 @@ struct CurrentLiveActivity: Widget {
             } compactTrailing: {
                 compactSpeed(context, down: false)
             } minimal: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(IslandColor.down)
+                VStack(spacing: 0) {
+                    Text("↓\(SpeedFormat.minimalRate(context.state.downloadBytesPerSecond, unit: context.state.unit))")
+                        .foregroundStyle(isFresh(context) ? IslandColor.down : .gray)
+                    Text("↑\(SpeedFormat.minimalRate(context.state.uploadBytesPerSecond, unit: context.state.unit))")
+                        .foregroundStyle(isFresh(context) ? IslandColor.up : .gray)
+                }
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .frame(width: 32, height: 30)
+                .accessibilityLabel("Download \(SpeedFormat.rate(context.state.downloadBytesPerSecond, unit: context.state.unit)), upload \(SpeedFormat.rate(context.state.uploadBytesPerSecond, unit: context.state.unit))")
             }
             .widgetURL(URL(string: "current://open"))
         }
