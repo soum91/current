@@ -45,6 +45,42 @@ final class SpeedStore: ObservableObject {
             Task { await updateActivity(force: true) }
         }
     }
+    @Published var islandLayout: IslandLayout {
+        didSet {
+            UserDefaults.standard.set(islandLayout.rawValue, forKey: "islandLayout")
+            Task { await updateActivity(force: true) }
+        }
+    }
+    @Published var leadingTemplate: String {
+        didSet {
+            UserDefaults.standard.set(leadingTemplate, forKey: "islandLeadingTemplate")
+            scheduleAppearanceUpdate()
+        }
+    }
+    @Published var trailingTemplate: String {
+        didSet {
+            UserDefaults.standard.set(trailingTemplate, forKey: "islandTrailingTemplate")
+            scheduleAppearanceUpdate()
+        }
+    }
+    @Published var minimalTopTemplate: String {
+        didSet {
+            UserDefaults.standard.set(minimalTopTemplate, forKey: "islandMinimalTopTemplate")
+            scheduleAppearanceUpdate()
+        }
+    }
+    @Published var minimalBottomTemplate: String {
+        didSet {
+            UserDefaults.standard.set(minimalBottomTemplate, forKey: "islandMinimalBottomTemplate")
+            scheduleAppearanceUpdate()
+        }
+    }
+    @Published var customTextSize: Double {
+        didSet {
+            UserDefaults.standard.set(customTextSize, forKey: "islandCustomTextSize")
+            scheduleAppearanceUpdate()
+        }
+    }
     @Published var backgroundModeEnabled: Bool {
         didSet {
             UserDefaults.standard.set(backgroundModeEnabled, forKey: "backgroundAlwaysModeEnabled")
@@ -65,6 +101,7 @@ final class SpeedStore: ObservableObject {
     private var isInBackground = false
     private var trackedActivity: Activity<SpeedActivityAttributes>?
     private var activityStateObserver: Task<Void, Never>?
+    private var appearanceUpdateTask: Task<Void, Never>?
 
     init() {
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
@@ -72,6 +109,13 @@ final class SpeedStore: ObservableObject {
         self.sampleInterval = [0.25, 0.5, 1.0, 2.0].contains(savedSampleInterval) ? savedSampleInterval : 0.5
         let savedActivityInterval = UserDefaults.standard.double(forKey: "activityUpdateInterval")
         self.activityUpdateInterval = [0.5, 1.0, 2.0, 5.0].contains(savedActivityInterval) ? savedActivityInterval : 1.0
+        self.islandLayout = IslandLayout(rawValue: UserDefaults.standard.string(forKey: "islandLayout") ?? "classic") ?? .classic
+        self.leadingTemplate = UserDefaults.standard.string(forKey: "islandLeadingTemplate") ?? IslandTemplate.leading
+        self.trailingTemplate = UserDefaults.standard.string(forKey: "islandTrailingTemplate") ?? IslandTemplate.trailing
+        self.minimalTopTemplate = UserDefaults.standard.string(forKey: "islandMinimalTopTemplate") ?? IslandTemplate.top
+        self.minimalBottomTemplate = UserDefaults.standard.string(forKey: "islandMinimalBottomTemplate") ?? IslandTemplate.bottom
+        let savedCustomTextSize = UserDefaults.standard.double(forKey: "islandCustomTextSize")
+        self.customTextSize = [8.0, 10.0, 12.0].contains(savedCustomTextSize) ? savedCustomTextSize : 10.0
         // Do not silently reuse the old experimental location preference.
         self.backgroundModeEnabled = UserDefaults.standard.bool(forKey: "backgroundAlwaysModeEnabled")
         refreshActivityStatus()
@@ -109,6 +153,7 @@ final class SpeedStore: ObservableObject {
     deinit {
         pathMonitor?.cancel()
         activityStateObserver?.cancel()
+        appearanceUpdateTask?.cancel()
     }
 
     func startMeasuring() {
@@ -229,7 +274,23 @@ final class SpeedStore: ObservableObject {
               unit: unit,
               interfaceLabel: interfaceLabel,
               updatedAt: .now,
-              isMeasuring: isMeasuring)
+              isMeasuring: isMeasuring,
+              islandLayout: islandLayout,
+              leadingTemplate: IslandTemplate.limited(leadingTemplate),
+              trailingTemplate: IslandTemplate.limited(trailingTemplate),
+              minimalTopTemplate: IslandTemplate.limited(minimalTopTemplate),
+              minimalBottomTemplate: IslandTemplate.limited(minimalBottomTemplate),
+              customTextSize: customTextSize)
+    }
+
+    private func scheduleAppearanceUpdate() {
+        appearanceUpdateTask?.cancel()
+        appearanceUpdateTask = Task { [weak self] in
+            do { try await Task.sleep(nanoseconds: 350_000_000) }
+            catch { return }
+            guard !Task.isCancelled else { return }
+            await self?.updateActivity(force: true)
+        }
     }
 
     private func isOngoing(_ activity: Activity<SpeedActivityAttributes>) -> Bool {

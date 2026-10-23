@@ -9,6 +9,13 @@ struct SpeedActivityAttributes: ActivityAttributes {
         var interfaceLabel: String
         var updatedAt: Date
         var isMeasuring: Bool
+        // Optional for compatibility with Live Activities started by older builds.
+        var islandLayout: IslandLayout?
+        var leadingTemplate: String?
+        var trailingTemplate: String?
+        var minimalTopTemplate: String?
+        var minimalBottomTemplate: String?
+        var customTextSize: Double?
     }
 
     var label: String = "Network speed"
@@ -20,6 +27,42 @@ enum SpeedUnit: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var title: String { self == .bytes ? "Bytes/s" : "Bits/s" }
+}
+
+enum IslandLayout: String, Codable, CaseIterable, Identifiable {
+    case classic
+    case slim
+    case custom
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+}
+
+enum IslandTemplate {
+    static let leading = "↓{down}"
+    static let trailing = "↑{up}"
+    static let top = "↓{down}"
+    static let bottom = "↑{up}"
+
+    static func limited(_ template: String) -> String {
+        String(template.prefix(40))
+    }
+
+    static func render(_ template: String, download: Double, upload: Double,
+                       unit: SpeedUnit, interface: String = "") -> String {
+        var value = limited(template)
+        let replacements = [
+            "{down}": SpeedFormat.minimalRate(download, unit: unit),
+            "{up}": SpeedFormat.minimalRate(upload, unit: unit),
+            "{down.full}": SpeedFormat.rate(download, unit: unit, compact: true),
+            "{up.full}": SpeedFormat.rate(upload, unit: unit, compact: true),
+            "{interface}": interface
+        ]
+        for (token, replacement) in replacements {
+            value = value.replacingOccurrences(of: token, with: replacement)
+        }
+        return String(value.replacingOccurrences(of: "\n", with: " ").prefix(48))
+    }
 }
 
 enum SpeedFormat {

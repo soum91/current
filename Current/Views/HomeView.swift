@@ -118,22 +118,16 @@ struct HomeView: View {
             .font(.caption)
             .foregroundStyle(.white.opacity(0.56))
 
-            HStack(spacing: 13) {
-                Image(systemName: "arrow.down")
-                    .foregroundStyle(Theme.download)
-                Text(SpeedFormat.rate(store.download, unit: store.unit, compact: true))
-                    .foregroundStyle(Theme.download)
-                Rectangle().fill(.white.opacity(0.14)).frame(width: 1, height: 15)
-                Image(systemName: "arrow.up")
-                    .foregroundStyle(Theme.upload)
-                Text(SpeedFormat.rate(store.upload, unit: store.unit, compact: true))
-                    .foregroundStyle(Theme.upload)
+            HStack(spacing: 12) {
+                islandLeadingPreview
+                Spacer(minLength: 4)
+                islandTrailingPreview
             }
             .font(.system(size: 14, weight: .semibold, design: .rounded))
             .monospacedDigit()
             .padding(.horizontal, 18)
             .padding(.vertical, 13)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 46)
             .background(Color.black, in: Capsule())
             .accessibilityLabel("Dynamic Island preview")
 
@@ -149,12 +143,17 @@ struct HomeView: View {
                 }
                 Spacer(minLength: 4)
                 VStack(spacing: 0) {
-                    Text("↓\(SpeedFormat.minimalRate(store.download, unit: store.unit))")
+                    Text(store.islandLayout == .custom
+                         ? customPreview(store.minimalTopTemplate)
+                         : "↓\(SpeedFormat.minimalRate(store.download, unit: store.unit))")
                         .foregroundStyle(Theme.download)
-                    Text("↑\(SpeedFormat.minimalRate(store.upload, unit: store.unit))")
+                    Text(store.islandLayout == .custom
+                         ? customPreview(store.minimalBottomTemplate)
+                         : "↑\(SpeedFormat.minimalRate(store.upload, unit: store.unit))")
                         .foregroundStyle(Theme.upload)
                 }
-                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .font(.system(size: store.islandLayout == .custom ? min(store.customTextSize, 11) : 9,
+                              weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
@@ -204,6 +203,57 @@ struct HomeView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .card()
+    }
+
+    @ViewBuilder
+    private var islandLeadingPreview: some View {
+        switch store.islandLayout {
+        case .classic:
+            HStack(spacing: 3) {
+                Image(systemName: "arrow.down")
+                Text(SpeedFormat.rate(store.download, unit: store.unit, compact: true))
+            }
+            .foregroundStyle(Theme.download)
+        case .slim:
+            EmptyView()
+        case .custom:
+            Text(customPreview(store.leadingTemplate))
+                .font(.system(size: store.customTextSize, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.download)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+    }
+
+    @ViewBuilder
+    private var islandTrailingPreview: some View {
+        switch store.islandLayout {
+        case .classic:
+            HStack(spacing: 3) {
+                Image(systemName: "arrow.up")
+                Text(SpeedFormat.rate(store.upload, unit: store.unit, compact: true))
+            }
+            .foregroundStyle(Theme.upload)
+        case .slim:
+            VStack(spacing: 0) {
+                Text("↓\(SpeedFormat.minimalRate(store.download, unit: store.unit))")
+                    .foregroundStyle(Theme.download)
+                Text("↑\(SpeedFormat.minimalRate(store.upload, unit: store.unit))")
+                    .foregroundStyle(Theme.upload)
+            }
+            .font(.system(size: 9, weight: .bold, design: .rounded))
+        case .custom:
+            Text(customPreview(store.trailingTemplate))
+                .font(.system(size: store.customTextSize, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.upload)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+    }
+
+    private func customPreview(_ template: String) -> String {
+        IslandTemplate.render(template, download: store.download, upload: store.upload,
+                              unit: store.unit, interface: store.interfaceLabel)
     }
 
     private var chartCard: some View {

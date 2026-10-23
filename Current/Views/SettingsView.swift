@@ -52,6 +52,66 @@ struct SettingsView: View {
                         }
                         .card()
 
+                        VStack(alignment: .leading, spacing: 13) {
+                            SectionTitle(text: "Dynamic Island appearance")
+                            Picker("Island layout", selection: $store.islandLayout) {
+                                ForEach(IslandLayout.allCases) { layout in
+                                    Text(layout.title).tag(layout)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+
+                            switch store.islandLayout {
+                            case .classic:
+                                Text("Classic puts download on the left and upload on the right, like the earlier working builds.")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.64))
+                            case .slim:
+                                Text("Slim groups both speeds on the right. iOS may still reserve an empty area on the left.")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.64))
+                            case .custom:
+                                Text("Write your own text for each side of the main Island and both lines of the smaller secondary Island.")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.64))
+
+                                templateField("Left side", text: $store.leadingTemplate)
+                                templateField("Right side", text: $store.trailingTemplate)
+                                templateField("Small Island, top", text: $store.minimalTopTemplate)
+                                templateField("Small Island, bottom", text: $store.minimalBottomTemplate)
+
+                                Text("Text size")
+                                    .font(.subheadline.weight(.semibold))
+                                Picker("Text size", selection: $store.customTextSize) {
+                                    Text("8 pt").tag(8.0)
+                                    Text("10 pt").tag(10.0)
+                                    Text("12 pt").tag(12.0)
+                                }
+                                .pickerStyle(.segmented)
+
+                                Text("Tokens: {down}  {up}  {down.full}  {up.full}  {interface}. Add any words, symbols or emoji. Keep each field short to fit the Island.")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.58))
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Button("Reset custom text to arrows") {
+                                    store.leadingTemplate = IslandTemplate.leading
+                                    store.trailingTemplate = IslandTemplate.trailing
+                                    store.minimalTopTemplate = IslandTemplate.top
+                                    store.minimalBottomTemplate = IslandTemplate.bottom
+                                    store.customTextSize = 10
+                                }
+                                .font(.caption.weight(.semibold))
+                                .tint(Theme.download)
+                            }
+
+                            Text("Apple controls the Island's black background and dimensions. Changing text or leaving one side empty cannot make its background transparent.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.46))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .card()
+
                         VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "Experimental background monitoring")
                             Toggle("Keep monitoring outside Current", isOn: $store.backgroundModeEnabled)
@@ -117,5 +177,23 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func templateField(_ label: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.72))
+            TextField(label, text: text)
+                .font(.system(.subheadline, design: .monospaced))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                .onChange(of: text.wrappedValue) { _, newValue in
+                    if newValue.count > 40 { text.wrappedValue = IslandTemplate.limited(newValue) }
+                }
+        }
     }
 }
