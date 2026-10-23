@@ -188,7 +188,9 @@ struct HomeView: View {
                 .foregroundStyle(.white.opacity(0.52))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("iOS limits background updates. Measurements pause when Current is backgrounded, and stale readings are marked paused.")
+            Text(store.backgroundLocationActive
+                 ? "Experimental background monitoring is active. iOS can still suspend updates; stale readings are marked paused."
+                 : "Without experimental background monitoring, measurements pause when Current is backgrounded; stale readings are marked paused.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.52))
                 .fixedSize(horizontal: false, vertical: true)
