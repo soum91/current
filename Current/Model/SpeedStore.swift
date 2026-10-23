@@ -22,6 +22,7 @@ final class SpeedStore: ObservableObject {
     @Published private(set) var isMeasuring = false
     @Published private(set) var hasLiveActivity = false
     @Published private(set) var activityStatus = "Off"
+    @Published private(set) var activityTransitioning = false
     @Published private(set) var backgroundLocationActive = false
     @Published private(set) var backgroundLocationStatus = "Off"
     @Published var errorMessage: String?
@@ -62,6 +63,8 @@ final class SpeedStore: ObservableObject {
     private var lastWidgetReload = Date.distantPast
     private var lastActivityStateCheck = Date.distantPast
     private var isInBackground = false
+    private var trackedActivity: Activity<SpeedActivityAttributes>?
+    private var activityStateObserver: Task<Void, Never>?
 
     init() {
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
@@ -105,6 +108,7 @@ final class SpeedStore: ObservableObject {
 
     deinit {
         pathMonitor?.cancel()
+        activityStateObserver?.cancel()
     }
 
     func startMeasuring() {
@@ -228,13 +232,41 @@ final class SpeedStore: ObservableObject {
               isMeasuring: isMeasuring)
     }
 
-    private func refreshActivityStatus() {
-        let live = Activity<SpeedActivityAttributes>.activities.first {
-            switch $0.activityState {
-            case .active, .stale: return true
-            case .ended, .dismissed: return false
-            @unknown default: return true
+    private func isOngoing(_ activity: Activity<SpeedActivityAttributes>) -> Bool {
+        switch activity.activityState {
+        case .active, .stale: return true
+        case .ended, .dismissed: return false
+        @unknown default: return true
+        }
+    }
+
+    private func currentActivity() -> Activity<SpeedActivityAttributes>? {
+        // ActivityKit hands us an Activity when request() succeeds. Its global
+        // activities array can lag behind that request, so retain the handle.
+        if let trackedActivity, isOngoing(trackedActivity) { return trackedActivity }
+        return Activity<SpeedActivityAttributes>.activities.first(where: isOngoing)
+    }
+
+    private func track(_ activity: Activity<SpeedActivityAttributes>) {
+        guard trackedActivity?.id != activity.id else { return }
+        activityStateObserver?.cancel()
+        trackedActivity = activity
+        activityStateObserver = Task { [weak self] in
+            for await _ in activity.activityStateUpdates {
+                guard let self else { break }
+                self.refreshActivityStatus()
             }
+        }
+    }
+
+    private func refreshActivityStatus() {
+        let live = currentActivity()
+        if let live {
+            track(live)
+        } else {
+            activityStateObserver?.cancel()
+            activityStateObserver = nil
+            trackedActivity = nil
         }
         hasLiveActivity = live != nil
         switch live?.activityState {
@@ -249,6 +281,9 @@ final class SpeedStore: ObservableObject {
     }
 
     func toggleLiveActivity() async {
+        guard !activityTransitioning else { return }
+        activityTransitioning = true
+        defer { activityTransitioning = false }
         refreshActivityStatus()
         if hasLiveActivity {
             await endLiveActivities()
@@ -259,6 +294,9 @@ final class SpeedStore: ObservableObject {
     }
 
     func restartLiveActivity() async {
+        guard !activityTransitioning else { return }
+        activityTransitioning = true
+        defer { activityTransitioning = false }
         await endLiveActivities()
         // Give ActivityKit time to retire the previous request before replacing it.
         try? await Task.sleep(nanoseconds: 250_000_000)
@@ -266,9 +304,16 @@ final class SpeedStore: ObservableObject {
     }
 
     private func endLiveActivities() async {
-        for activity in Activity<SpeedActivityAttributes>.activities {
+        var activities = Activity<SpeedActivityAttributes>.activities
+        if let trackedActivity, !activities.contains(where: { $0.id == trackedActivity.id }) {
+            activities.append(trackedActivity)
+        }
+        for activity in activities {
             await activity.end(ActivityContent(state: state(), staleDate: nil), dismissalPolicy: .immediate)
         }
+        activityStateObserver?.cancel()
+        activityStateObserver = nil
+        trackedActivity = nil
         hasLiveActivity = false
         activityStatus = "Off"
         lastActivityUpdate = .distantPast
@@ -286,6 +331,7 @@ final class SpeedStore: ObservableObject {
                 content: ActivityContent(state: state(), staleDate: .now.addingTimeInterval(12)),
                 pushType: nil
             )
+            track(activity)
             hasLiveActivity = true
             activityStatus = "Requested: \(activity.activityState)"
             lastActivityUpdate = .now
@@ -304,7 +350,16 @@ final class SpeedStore: ObservableObject {
             state: state(),
             staleDate: isMeasuring ? .now.addingTimeInterval(12) : nil
         )
-        for activity in Activity<SpeedActivityAttributes>.activities {
+        var activities = Activity<SpeedActivityAttributes>.activities.filter(isOngoing)
+        if let trackedActivity, isOngoing(trackedActivity),
+           !activities.contains(where: { $0.id == trackedActivity.id }) {
+            activities.append(trackedActivity)
+        }
+        guard !activities.isEmpty else {
+            refreshActivityStatus()
+            return
+        }
+        for activity in activities {
             await activity.update(content)
         }
         lastActivityUpdate = .now

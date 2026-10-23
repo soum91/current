@@ -170,6 +170,7 @@ struct HomeView: View {
                 .background(store.hasLiveActivity ? Color.white.opacity(0.10) : Theme.download,
                             in: RoundedRectangle(cornerRadius: 15, style: .continuous))
             }
+            .disabled(store.activityTransitioning)
 
             if store.hasLiveActivity {
                 Button {
@@ -181,6 +182,7 @@ struct HomeView: View {
                         .padding(.vertical, 9)
                 }
                 .tint(Theme.download)
+                .disabled(store.activityTransitioning)
             }
 
             Text("Current's Live Activity may not appear in the Island while Current itself is open. After starting it, swipe Home or switch to another app to check.")
