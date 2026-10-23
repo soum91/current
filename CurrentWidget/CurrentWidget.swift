@@ -42,9 +42,20 @@ struct CurrentLiveActivity: Widget {
                     .padding(.bottom, 8)
                 }
             } compactLeading: {
-                compactSpeed(context, down: true)
+                EmptyView()
             } compactTrailing: {
-                compactSpeed(context, down: false)
+                VStack(spacing: 0) {
+                    Text("↓\(SpeedFormat.minimalRate(context.state.downloadBytesPerSecond, unit: context.state.unit))")
+                        .foregroundStyle(isFresh(context) ? IslandColor.down : .gray)
+                    Text("↑\(SpeedFormat.minimalRate(context.state.uploadBytesPerSecond, unit: context.state.unit))")
+                        .foregroundStyle(isFresh(context) ? IslandColor.up : .gray)
+                }
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .frame(width: 32, height: 30)
+                .accessibilityLabel("Download \(SpeedFormat.rate(context.state.downloadBytesPerSecond, unit: context.state.unit)), upload \(SpeedFormat.rate(context.state.uploadBytesPerSecond, unit: context.state.unit))")
             } minimal: {
                 VStack(spacing: 0) {
                     Text("↓\(SpeedFormat.minimalRate(context.state.downloadBytesPerSecond, unit: context.state.unit))")
@@ -65,23 +76,6 @@ struct CurrentLiveActivity: Widget {
 
     private func isFresh(_ context: ActivityViewContext<SpeedActivityAttributes>) -> Bool {
         context.state.isMeasuring && !context.isStale
-    }
-
-    private func compactSpeed(_ context: ActivityViewContext<SpeedActivityAttributes>, down: Bool) -> some View {
-        let color = down ? IslandColor.down : IslandColor.up
-        let value = down ? context.state.downloadBytesPerSecond : context.state.uploadBytesPerSecond
-        return HStack(spacing: 3) {
-            Image(systemName: down ? "arrow.down" : "arrow.up")
-                .font(.system(size: 10, weight: .bold))
-            // Keep the last measured number visible after iOS suspends the app.
-            // The gray styling indicates that it is no longer a live reading.
-            Text(SpeedFormat.rate(value, unit: context.state.unit, compact: true))
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-        }
-        .foregroundStyle(isFresh(context) ? color : .gray)
     }
 
     private func expandedSpeed(_ context: ActivityViewContext<SpeedActivityAttributes>, down: Bool) -> some View {
