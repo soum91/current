@@ -10,6 +10,10 @@ private enum IslandColor {
 @main
 struct CurrentWidgetBundle: WidgetBundle {
     var body: some Widget {
+        CurrentLockWidget()
+        CurrentMonitoringControl()
+        CurrentActivityControl()
+
         CurrentLiveActivity()
         CurrentSpeedWidget()
     }

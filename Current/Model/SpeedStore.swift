@@ -13,6 +13,7 @@ struct SpeedSample: Identifiable {
 
 @MainActor
 final class SpeedStore: ObservableObject {
+    static let shared = SpeedStore()
     @Published private(set) var download: Double = 0
     @Published private(set) var upload: Double = 0
     @Published private(set) var totalDownload: UInt64 = 0
@@ -157,6 +158,7 @@ final class SpeedStore: ObservableObject {
     }
 
     func startMeasuring() {
+        guard UserDefaults.standard.object(forKey: "monitoringEnabled") as? Bool ?? true else { return }
         refreshActivityStatus()
         if !isInBackground { syncBackgroundLocation() }
         guard measuringTask == nil else { return }

@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct CurrentApp: App {
-    @StateObject private var store = SpeedStore()
+    @StateObject private var store = SpeedStore.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
