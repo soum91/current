@@ -12,7 +12,7 @@ Designed for iPhone 17 on iOS 27, with iOS 18 as the minimum deployment target.
 - **One-minute chart** of observed transfer rates and data transferred during the current monitoring session.
 - **Connection type** from the active Network framework path rather than treating every present Wi-Fi and cellular interface as currently carrying traffic.
 - **Bytes or bits** display settings. No user account or network permissions required.
-- **Optional experimental background mode** requiring Location: Always to request additional background execution time. Location coordinates are never read, saved or transmitted by Current.
+- **Optional experimental background mode** requiring Location: Always to request additional background execution time. Location coordinates are never read, saved or transmitted by Current. Balanced background updates are on by default: network sampling is throttled to every 5 seconds and Island updates to 15 seconds in the background, while foreground speed stays unchanged.
 - **Privacy-first**: all speed calculations happen on the phone; the app makes no network requests of its own.
 
 ## The iOS background limit

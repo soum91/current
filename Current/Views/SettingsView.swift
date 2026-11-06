@@ -116,6 +116,13 @@ struct SettingsView: View {
                             SectionTitle(text: "Experimental background monitoring")
                             Toggle("Keep monitoring outside Current", isOn: $store.backgroundModeEnabled)
                                 .tint(Theme.download)
+                            Toggle("Balanced background updates", isOn: $store.balancedBackgroundSampling)
+                                .tint(Theme.download)
+                                .disabled(!store.backgroundModeEnabled)
+                            Text("Recommended: when running in the background, sample every 5 seconds and update the Island at most every 15 seconds. Foreground sampling stays as configured.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.64))
+                                .fixedSize(horizontal: false, vertical: true)
                             HStack(alignment: .top, spacing: 8) {
                                 Circle()
                                     .fill(store.backgroundLocationActive ? Theme.download : .orange)

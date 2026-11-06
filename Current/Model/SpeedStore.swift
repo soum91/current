@@ -89,6 +89,23 @@ final class SpeedStore: ObservableObject {
         }
     }
 
+    /// Keep foreground responsiveness; reduce wake-ups when the optional
+    /// Always-location background session is running.
+    @Published var balancedBackgroundSampling: Bool {
+        didSet {
+            UserDefaults.standard.set(balancedBackgroundSampling, forKey: "balancedBackgroundSampling")
+            if isMeasuring { restartPollingTask() }
+        }
+    }
+
+    private var effectiveSampleInterval: Double {
+        (isInBackground && balancedBackgroundSampling) ? max(sampleInterval, 5.0) : sampleInterval
+    }
+
+    private var effectiveActivityInterval: Double {
+        (isInBackground && balancedBackgroundSampling) ? max(activityUpdateInterval, 15.0) : activityUpdateInterval
+    }
+
     private let backgroundLocation = BackgroundLocationController()
     private var pathMonitor: NWPathMonitor?
     private var measuringTask: Task<Void, Never>?
@@ -119,6 +136,7 @@ final class SpeedStore: ObservableObject {
         self.customTextSize = [8.0, 10.0, 12.0].contains(savedCustomTextSize) ? savedCustomTextSize : 10.0
         // Do not silently reuse the old experimental location preference.
         self.backgroundModeEnabled = UserDefaults.standard.bool(forKey: "backgroundAlwaysModeEnabled")
+        self.balancedBackgroundSampling = UserDefaults.standard.object(forKey: "balancedBackgroundSampling") as? Bool ?? true
         refreshActivityStatus()
         backgroundLocation.onStatusChange = { [weak self] running, status in
             guard let self else { return }
@@ -173,12 +191,16 @@ final class SpeedStore: ObservableObject {
     func scenePhaseChanged(_ phase: ScenePhase) {
         switch phase {
         case .active:
+            let wasBackground = isInBackground
             isInBackground = false
+            if wasBackground && isMeasuring { restartPollingTask() }
             startMeasuring()
         case .background:
             isInBackground = true
             if !backgroundModeEnabled || !backgroundLocationActive {
                 pauseMeasuring()
+            } else if isMeasuring {
+                restartPollingTask()
             }
         default:
             break
@@ -198,7 +220,7 @@ final class SpeedStore: ObservableObject {
         measuringTask?.cancel()
         measuringTask = Task { [weak self] in
             while !Task.isCancelled {
-                guard let interval = self?.sampleInterval else { break }
+                guard let interval = self?.effectiveSampleInterval else { break }
                 do { try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000)) }
                 catch { break }
                 guard let self else { break }
@@ -221,6 +243,12 @@ final class SpeedStore: ObservableObject {
 
     private func poll() {
         let now = Date()
+        // Location callbacks can arrive in bursts, independent of the polling
+        // timer. Limit both paths while background Eco mode is enabled.
+        if isInBackground && balancedBackgroundSampling &&
+           now.timeIntervalSince(previousDate ?? .distantPast) < effectiveSampleInterval {
+            return
+        }
         if now.timeIntervalSince(lastActivityStateCheck) >= 2 {
             refreshActivityStatus()
             lastActivityStateCheck = now
@@ -245,7 +273,7 @@ final class SpeedStore: ObservableObject {
 
         publishWidgetSnapshot()
 
-        if hasLiveActivity && now.timeIntervalSince(lastActivityUpdate) >= activityUpdateInterval {
+        if hasLiveActivity && now.timeIntervalSince(lastActivityUpdate) >= effectiveActivityInterval {
             Task { await updateActivity() }
         }
     }
@@ -406,12 +434,12 @@ final class SpeedStore: ObservableObject {
 
     private func updateActivity(force: Bool = false) async {
         guard hasLiveActivity, !activityUpdatePending else { return }
-        if !force && Date().timeIntervalSince(lastActivityUpdate) < activityUpdateInterval { return }
+        if !force && Date().timeIntervalSince(lastActivityUpdate) < effectiveActivityInterval { return }
         activityUpdatePending = true
         defer { activityUpdatePending = false }
         let content = ActivityContent(
             state: state(),
-            staleDate: isMeasuring ? .now.addingTimeInterval(12) : nil
+            staleDate: isMeasuring ? .now.addingTimeInterval(max(12, effectiveActivityInterval * 2 + 5)) : nil
         )
         var activities = Activity<SpeedActivityAttributes>.activities.filter(isOngoing)
         if let trackedActivity, isOngoing(trackedActivity),
