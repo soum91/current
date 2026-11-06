@@ -164,6 +164,13 @@ struct SettingsView: View {
                         }
                         .font(.subheadline)
                         .card()
+                        VStack(alignment: .leading, spacing: 8) {
+                            SectionTitle(text: "About")
+                            Text("Installed version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown") (build \(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"))")
+                                .font(.footnote)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                        .card()
                     }
                     .padding(20)
                 }
