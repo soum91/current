@@ -1,5 +1,13 @@
 # Changelog
 
+## [build-23] - 2026-11-14
+
+## Verified changes since build-22
+
+- Add zero-size Anchor trial, quiet Lock Screen options, and traffic-triggered Current Island ([`1bddbc34`](https://github.com/soum91/current/commit/1bddbc34f03d8730e444789485c9c372bf9590e7); `.github/workflows/build.yml`, `AnchorApp/AnchorApp.swift`, `AnchorShared/AnchorAttributes.swift`, and 6 more)
+
+[Inspect exact code changes](https://github.com/soum91/current/compare/build-22...build-23)
+
 ## [build-22] - 2026-11-14
 
 ## Verified changes since build-21
