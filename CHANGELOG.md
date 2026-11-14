@@ -1,5 +1,13 @@
 # Changelog
 
+## [build-26] - 2026-11-14
+
+## Verified changes since build-25
+
+- Improve on-demand wake detection and keep minimal idle activity present ([`9afda9d9`](https://github.com/soum91/current/commit/9afda9d91a4badddd183c0a3075dd95a2e437720); `.github/workflows/build.yml`, `Current/Model/SpeedStore.swift`, `Current/Views/SettingsView.swift`, and 2 more)
+
+[Inspect exact code changes](https://github.com/soum91/current/compare/build-25...build-26)
+
 ## [build-25] - 2026-11-14
 
 ## Verified changes since build-23
