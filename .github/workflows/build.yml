@@ -125,7 +125,7 @@ jobs:
           make_latest: true
           body: |
             Current Anchor adds Zero-size placeholder rendering and optional quiet Lock Screen content.
-            Current adds an opt-in traffic-triggered Live Activity with configurable traffic and idle thresholds.
+            Current keeps an opt-in traffic-triggered Live Activity armed while idle; speed text clears and automatically resumes when traffic is detected. Standard background Activity.request is unsupported, so this avoids ending the activity. Existing ActivityKit and iOS scheduling limits apply.
             The working two-line speed display and classic modes remain unchanged.
 
             Existing capability: separate Current Anchor experiment (second iOS bundle ID and widget).

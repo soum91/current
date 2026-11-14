@@ -33,8 +33,16 @@ final class SpeedStore: ObservableObject {
         didSet {
             UserDefaults.standard.set(trafficTriggeredIsland, forKey: "trafficTriggeredIsland")
             resetTrafficTrigger()
+            autoModeManuallyDisabled = false
+            trafficVisible = !trafficTriggeredIsland
+            if trafficTriggeredIsland {
+                Task { await armTrafficActivityIfNeeded() }
+            } else {
+                Task { await updateActivity(force: true) }
+            }
         }
     }
+    @Published private(set) var trafficVisible = true
     @Published var trafficThresholdKBps: Double {
         didSet {
             UserDefaults.standard.set(trafficThresholdKBps, forKey: "trafficThresholdKBps")
@@ -149,62 +157,60 @@ final class SpeedStore: ObservableObject {
     private var trafficAboveSince: Date?
     private var trafficBelowSince: Date?
     private var lastAutoTransition = Date.distantPast
+    private var autoModeManuallyDisabled = false
     private var autoTransitionPending = false
 
     private func resetTrafficTrigger() {
         trafficAboveSince = nil
         trafficBelowSince = nil
-        lastAutoTransition = .distantPast
     }
 
-    /// Intentionally never requests a new Live Activity from background execution.
-    /// ActivityKit requires a foreground app or a system-initiated LiveActivityIntent.
+    /// Arm a real Live Activity while Current is in the foreground. Ending
+    /// activities on idle made background restart impossible (ActivityKit
+    /// visibility restriction). Keep it registered and only hide its text.
+    private func armTrafficActivityIfNeeded() async {
+        guard trafficTriggeredIsland,
+              !autoModeManuallyDisabled,
+              !isInBackground,
+              !hasLiveActivity,
+              !activityTransitioning,
+              !autoTransitionPending else { return }
+        autoTransitionPending = true
+        activityTransitioning = true
+        defer {
+            autoTransitionPending = false
+            activityTransitioning = false
+            lastAutoTransition = .now
+        }
+        await requestLiveActivity()
+    }
+
     private func updateTrafficPresentation(now: Date) {
-        guard trafficTriggeredIsland, isMeasuring, !activityTransitioning, !autoTransitionPending else { return }
+        guard trafficTriggeredIsland, isMeasuring else { return }
         let totalBytesPerSecond = download + upload
         let minimum = trafficThresholdKBps * 1000
         if totalBytesPerSecond >= minimum {
             trafficBelowSince = nil
             if trafficAboveSince == nil { trafficAboveSince = now }
-            guard !hasLiveActivity,
-                  !isInBackground,
-                  now.timeIntervalSince(trafficAboveSince ?? now) >= max(1.0, sampleInterval * 2),
-                  now.timeIntervalSince(lastAutoTransition) >= 3 else { return }
-            autoTransitionPending = true
-            Task { [weak self] in
-                guard let self else { return }
-                defer { self.autoTransitionPending = false }
-                guard !self.activityTransitioning, !self.hasLiveActivity else { return }
-                self.activityTransitioning = true
-                defer {
-                    self.activityTransitioning = false
-                    self.lastAutoTransition = .now
-                }
-                await self.requestLiveActivity()
-            }
+            guard !trafficVisible,
+                  now.timeIntervalSince(trafficAboveSince ?? now) >= max(1.0, sampleInterval * 2) else { return }
+            trafficVisible = true
+            Task { await updateActivity(force: true) }
         } else {
             trafficAboveSince = nil
             if trafficBelowSince == nil { trafficBelowSince = now }
-            guard hasLiveActivity,
-                  now.timeIntervalSince(trafficBelowSince ?? now) >= trafficIdleTimeout,
-                  now.timeIntervalSince(lastAutoTransition) >= 3 else { return }
-            autoTransitionPending = true
-            Task { [weak self] in
-                guard let self else { return }
-                defer { self.autoTransitionPending = false }
-                guard !self.activityTransitioning, self.hasLiveActivity else { return }
-                self.activityTransitioning = true
-                defer {
-                    self.activityTransitioning = false
-                    self.lastAutoTransition = .now
-                }
-                await self.endLiveActivities()
-            }
+            guard trafficVisible,
+                  now.timeIntervalSince(trafficBelowSince ?? now) >= trafficIdleTimeout else { return }
+            trafficVisible = false
+            // Don't end! Background Activity.request will fail, so the
+            // existing activity must stay live for its speed UI to recover.
+            Task { await updateActivity(force: true) }
         }
     }
 
     init() {
         self.trafficTriggeredIsland = UserDefaults.standard.bool(forKey: "trafficTriggeredIsland")
+        self.trafficVisible = !self.trafficTriggeredIsland
         let savedThreshold = UserDefaults.standard.double(forKey: "trafficThresholdKBps")
         self.trafficThresholdKBps = [1.0, 10.0, 50.0, 100.0, 500.0].contains(savedThreshold) ? savedThreshold : 10.0
         let savedIdleTimeout = UserDefaults.standard.double(forKey: "trafficIdleTimeout")
@@ -266,6 +272,7 @@ final class SpeedStore: ObservableObject {
     func startMeasuring() {
         guard UserDefaults.standard.object(forKey: "monitoringEnabled") as? Bool ?? true else { return }
         refreshActivityStatus()
+        if trafficTriggeredIsland { Task { await armTrafficActivityIfNeeded() } }
         if !isInBackground { syncBackgroundLocation() }
         guard measuringTask == nil else { return }
         previous = InterfaceSampler.snapshot()
@@ -400,7 +407,8 @@ final class SpeedStore: ObservableObject {
               minimalTopTemplate: IslandTemplate.limited(minimalTopTemplate),
               minimalBottomTemplate: IslandTemplate.limited(minimalBottomTemplate),
               customTextSize: customTextSize,
-              quietLockScreen: quietLockScreen)
+              quietLockScreen: quietLockScreen,
+              trafficVisible: trafficVisible)
     }
 
     private func scheduleAppearanceUpdate() {
@@ -463,6 +471,8 @@ final class SpeedStore: ObservableObject {
 
     func toggleLiveActivity() async {
         guard !activityTransitioning else { return }
+        // Respect the explicit Stop button even when auto mode is on.
+        autoModeManuallyDisabled = hasLiveActivity
         activityTransitioning = true
         defer { activityTransitioning = false }
         refreshActivityStatus()
@@ -476,6 +486,7 @@ final class SpeedStore: ObservableObject {
 
     func restartLiveActivity() async {
         guard !activityTransitioning else { return }
+        autoModeManuallyDisabled = false
         activityTransitioning = true
         defer { activityTransitioning = false }
         await endLiveActivities()

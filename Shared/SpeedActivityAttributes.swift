@@ -17,6 +17,8 @@ struct SpeedActivityAttributes: ActivityAttributes {
         var minimalBottomTemplate: String?
         var customTextSize: Double?
         var quietLockScreen: Bool?
+        // nil for activities started by versions before dormant/idle mode.
+        var trafficVisible: Bool?
     }
 
     var label: String = "Network speed"

@@ -114,9 +114,9 @@ struct SettingsView: View {
 
                         VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "On-demand Dynamic Island")
-                            Toggle("Only show when network traffic is active", isOn: $store.trafficTriggeredIsland)
+                            Toggle("Auto-hide speed text while idle", isOn: $store.trafficTriggeredIsland)
                                 .tint(Theme.download)
-                            Text("Activity starts after traffic exceeds the threshold for at least a second. It ends after sustained idle traffic. Uses download + upload bytes per second, independent of display units.")
+                            Text("Keeps the Live Activity registered so it can recover in the background. After an idle period its speed text disappears; when traffic returns, the readings come back. iOS may keep the black Island pill visible.")
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.58))
                                 .fixedSize(horizontal: false, vertical: true)
@@ -129,7 +129,7 @@ struct SettingsView: View {
                                 Text("500 KB/s").tag(500.0)
                             }
                             .pickerStyle(.menu)
-                            Text("End after idle").font(.subheadline.weight(.semibold))
+                            Text("Hide text after idle").font(.subheadline.weight(.semibold))
                             Picker("Idle timeout", selection: $store.trafficIdleTimeout) {
                                 Text("5 seconds").tag(5.0)
                                 Text("15 seconds").tag(15.0)
@@ -137,7 +137,7 @@ struct SettingsView: View {
                                 Text("60 seconds").tag(60.0)
                             }
                             .pickerStyle(.segmented)
-                            Text("Important: when Current is backgrounded, iOS may suspend sampling. A ended Live Activity cannot reliably auto-restart until Current returns to the foreground. Leave this off for the original always-visible Island behavior.")
+                            Text("ActivityKit cannot reliably create a fresh Live Activity from ordinary background execution. The existing activity remains armed while idle; Current restores its text when measurements resume. iOS may suspend the app or end the activity after eight hours.")
                                 .font(.caption)
                                 .foregroundStyle(.orange.opacity(0.88))
                                 .fixedSize(horizontal: false, vertical: true)

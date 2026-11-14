@@ -33,13 +33,16 @@ struct CurrentLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.center) {
-                    HStack(spacing: 28) {
-                        expandedSpeed(context, down: true)
-                        expandedSpeed(context, down: false)
+                    if context.state.trafficVisible != false {
+                        HStack(spacing: 28) {
+                            expandedSpeed(context, down: true)
+                            expandedSpeed(context, down: false)
+                        }
+                        .padding(.top, 6)
                     }
-                    .padding(.top, 6)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
+                    if context.state.trafficVisible != false {
                     HStack(spacing: 6) {
                         Circle()
                             .fill(isFresh(context) ? IslandColor.down : .gray)
@@ -49,6 +52,7 @@ struct CurrentLiveActivity: Widget {
                             .foregroundStyle(.white.opacity(0.65))
                     }
                     .padding(.bottom, 8)
+                    }
                 }
             } compactLeading: {
                 compactLeading(context)
@@ -67,25 +71,35 @@ struct CurrentLiveActivity: Widget {
 
     @ViewBuilder
     private func compactLeading(_ context: ActivityViewContext<SpeedActivityAttributes>) -> some View {
+        if context.state.trafficVisible == false {
+            EmptyView()
+        } else {
         switch context.state.islandLayout ?? .classic {
         case .classic: classicCompactSpeed(context, down: true)
         case .slim: EmptyView()
         case .custom: customCompactText(context, down: true)
         }
+        }
     }
 
     @ViewBuilder
     private func compactTrailing(_ context: ActivityViewContext<SpeedActivityAttributes>) -> some View {
+        if context.state.trafficVisible == false {
+            EmptyView()
+        } else {
         switch context.state.islandLayout ?? .classic {
         case .classic: classicCompactSpeed(context, down: false)
         case .slim: standardMinimalContent(context)
         case .custom: customCompactText(context, down: false)
         }
+        }
     }
 
     @ViewBuilder
     private func minimalContent(_ context: ActivityViewContext<SpeedActivityAttributes>) -> some View {
-        if context.state.islandLayout == .custom {
+        if context.state.trafficVisible == false {
+            EmptyView()
+        } else if context.state.islandLayout == .custom {
             customMinimalContent(context)
         } else {
             // Identical to the working detached layout from build 12.
