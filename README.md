@@ -94,3 +94,28 @@ Independent project. Not affiliated with Apple.
 ## Artwork
 
 The Current icon is original artwork made specifically for this project. It depicts two contrasting flows for upload and download, using the same dark, atmospheric color direction as the app interface. No third-party icon or stock artwork is used.
+
+
+## Optional companion: Current Anchor (experimental)
+
+This repository also builds a **separate app** with its own bundle ID,
+`com.soum91.current.anchor`, and a separate Live Activity widget extension.
+It is published as a second IPA in the same GitHub Release and as **Current Anchor**
+in the existing FlareStore feed. It uses Current's existing app icon for the prototype.
+
+1. Install **both** Current and Current Anchor, preserving both widget extensions.
+2. Open Current Anchor and tap **Start Anchor**. This creates a neutral-dot placeholder
+   Live Activity; no fake network speeds are generated.
+3. Tap **Open Current**, then start or restart Current's speed Live Activity.
+4. Switch apps and observe the Dynamic Island. With activities from two different
+   app bundle IDs, iOS *may* use its two-activity presentation.
+5. To stop the test, open Current Anchor and tap **Stop Anchor**.
+
+The Anchor does not need location permission, sample the network, or periodically
+update itself. Apple controls which Live Activities are visible and their order,
+so this is **not** a guaranteed way to force Current into the detached bubble.
+iOS can automatically expire Live Activities after eight hours. A completely
+transparent or invisible system-owned Dynamic Island is not supported.
+
+The normal Current app's networking, always-location option and the proven
+secondary numeric readout are unchanged by this experiment.

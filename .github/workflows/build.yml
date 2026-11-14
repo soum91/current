@@ -50,6 +50,23 @@ jobs:
           test -d build/Build/Products/Release-iphoneos/Current.app
           test -d build/Build/Products/Release-iphoneos/Current.app/PlugIns/CurrentWidget.appex
 
+      - name: Build Current Anchor for iPhone
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Current.xcodeproj \
+            -scheme CurrentAnchor \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER \
+            build 2>&1 | tee anchor-build.log
+          test -d build/Build/Products/Release-iphoneos/CurrentAnchor.app
+          test -d build/Build/Products/Release-iphoneos/CurrentAnchor.app/PlugIns/AnchorWidget.appex
+
+
       - name: Package unsigned IPA
         id: ipa
         run: |
@@ -73,32 +90,60 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "display_version=$VERSION.$BUILD" >> "$GITHUB_OUTPUT"
 
+
+      - name: Package Anchor IPA separately
+        id: anchor
+        run: |
+          mkdir -p AnchorPayload/Payload
+          cp -R build/Build/Products/Release-iphoneos/CurrentAnchor.app AnchorPayload/Payload/
+          APP=AnchorPayload/Payload/CurrentAnchor.app
+          WIDGET="$APP/PlugIns/AnchorWidget.appex"
+          BUILD=$GITHUB_RUN_NUMBER
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$WIDGET/Info.plist"
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION.$BUILD" "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION.$BUILD" "$WIDGET/Info.plist"
+          codesign --force --sign - --timestamp=none "$WIDGET"
+          codesign --force --sign - --timestamp=none "$APP"
+          IPA="CurrentAnchor-$VERSION-build-$BUILD.ipa"
+          (cd AnchorPayload && zip -qr "../$IPA" Payload)
+          echo "ipa=$IPA" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
           name: Current-build-${{ github.run_number }}
-          path: ${{ steps.ipa.outputs.ipa }}
+          path: |
+            ${{ steps.ipa.outputs.ipa }}
+            ${{ steps.anchor.outputs.ipa }}
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Current ${{ steps.ipa.outputs.display_version }}
+          name: Current + Anchor ${{ steps.ipa.outputs.display_version }}
           make_latest: true
           body: |
-            iOS 18+ SwiftUI network throughput monitor with a Dynamic Island Live Activity.
+            New: separate Current Anchor experiment (second iOS bundle ID and widget).
+            Anchor starts/stops a tiny placeholder Live Activity to test whether
+            iOS places Current in its detached Dynamic Island bubble.
+            The original Current networking and Island implementation are unchanged.
 
-            This is an ad-hoc signed IPA for sideloading. Keep the CurrentWidget extension enabled when signing.
-
-            **Important:** iOS limits updates to Live Activities after the app is suspended. Current marks stale readings as paused; it cannot promise permanent second-by-second speeds over other apps.
-          files: ${{ steps.ipa.outputs.ipa }}
+            Install both IPAs with a signer that preserves their widget extensions.
+            Start Anchor first, then start Current's activity. This is opt-in,
+            does not guarantee Island placement, and expires under iOS time limits.
+          files: |
+            ${{ steps.ipa.outputs.ipa }}
+            ${{ steps.anchor.outputs.ipa }}
 
       - name: Refresh AltStore and FlareStore source
         env:
           IPA: ${{ steps.ipa.outputs.ipa }}
+          ANCHOR_IPA: ${{ steps.anchor.outputs.ipa }}
           VERSION: ${{ steps.ipa.outputs.version }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          python3 scripts/update_source.py "$IPA" "$VERSION" "$BUILD_NUMBER"
+          python3 scripts/update_source.py "$IPA" "$VERSION" "$BUILD_NUMBER" "$ANCHOR_IPA"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add source.json

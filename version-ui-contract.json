@@ -13,6 +13,19 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Current Anchor companion",
+      "evidence": [
+        {
+          "path": "AnchorApp/AnchorApp.swift",
+          "contains": [
+            "Installed version",
+            "CFBundleShortVersionString",
+            "CFBundleVersion"
+          ]
+        }
+      ]
     }
   ]
 }
