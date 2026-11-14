@@ -26,6 +26,34 @@ final class AnchorController: ObservableObject {
     @Published private(set) var busy = false
     @Published private(set) var status = "Off"
     @Published var error: String?
+    @Published var markerStyle: AnchorMarkerStyle {
+        didSet {
+            UserDefaults.standard.set(markerStyle.rawValue, forKey: "anchorMarkerStyle")
+            // Update the existing placeholder rather than interrupting Current.
+            Task { await refreshMarkerAppearance() }
+        }
+    }
+
+    init() {
+        markerStyle = AnchorMarkerStyle(
+            rawValue: UserDefaults.standard.string(forKey: "anchorMarkerStyle") ?? "black"
+        ) ?? .black
+    }
+
+    private func refreshMarkerAppearance() async {
+        for activity in Activity<AnchorAttributes>.activities where
+            activity.activityState == .active || activity.activityState == .stale {
+            let updated = AnchorAttributes.ContentState(
+                startedAt: activity.content.state.startedAt,
+                markerStyle: markerStyle
+            )
+            await activity.update(ActivityContent(
+                state: updated,
+                staleDate: nil,
+                relevanceScore: 100
+            ))
+        }
+    }
 
     func refresh() {
         guard !busy else { return }
@@ -56,7 +84,7 @@ final class AnchorController: ObservableObject {
             let activity = try Activity<AnchorAttributes>.request(
                 attributes: AnchorAttributes(),
                 content: ActivityContent(
-                    state: .init(startedAt: .now),
+                    state: .init(startedAt: .now, markerStyle: markerStyle),
                     staleDate: nil,
                     relevanceScore: 100
                 ),
@@ -119,6 +147,22 @@ private struct AnchorView: View {
                             .foregroundStyle(model.active ? .mint : .gray)
                     }
                     Text(model.status).font(.caption).foregroundStyle(.gray)
+
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text("Marker appearance").font(.subheadline.weight(.semibold))
+                        Picker("Marker appearance", selection: $model.markerStyle) {
+                            ForEach(AnchorMarkerStyle.allCases) { style in
+                                Text(style.title).tag(style)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        Text("Black blends into the Island. Clear draws no visible dot but keeps its space; Gray restores the original. These choices cannot shrink or hide the system's black Island background.")
+                            .font(.caption)
+                            .foregroundStyle(.gray)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 4)
                     Text("Starts a tiny, neutral placeholder activity. If iOS chooses to show two apps, the regular Current speed meter may appear in the detached Island bubble.")
                         .foregroundStyle(.white.opacity(0.75))
                         .fixedSize(horizontal: false, vertical: true)
@@ -154,7 +198,7 @@ private struct AnchorView: View {
                     Text("Test order").font(.headline)
                     Text("1. Start Anchor here.\n2. Tap Open Current and start or restart Current's speed Live Activity.\n3. Switch to another app and check which activity iOS places in the smaller bubble.\n4. Return here to stop Anchor.")
                         .foregroundStyle(.white.opacity(0.72))
-                    Text("Anchor does not monitor location, run in the background, or transmit anything. The placeholder is intentionally minimal, not invisible. iOS may prioritize another activity, and activities can expire after eight hours.")
+                    Text("Anchor does not monitor location, run in the background, or transmit anything. The marker can be black or transparent, but the system's Dynamic Island remains visible. iOS may prioritize another activity, and activities can expire after eight hours.")
                         .font(.caption).foregroundStyle(.gray)
                 }
                 .padding(20)

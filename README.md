@@ -119,3 +119,7 @@ transparent or invisible system-owned Dynamic Island is not supported.
 
 The normal Current app's networking, always-location option and the proven
 secondary numeric readout are unchanged by this experiment.
+
+### Anchor marker appearance
+
+The standalone Anchor app now offers **Black** (default), **Clear**, and **Gray** marker styles. Black blends into the system-owned black pill; Clear renders a fully transparent marker inside an unchanged 5–6 pt view. Both preserve the activity's layout footprint and cannot remove or resize the system Dynamic Island. You can change the marker while Anchor is already running without restarting Current. Gray is the original visible-dot fallback. The Current network-monitor target is unchanged.

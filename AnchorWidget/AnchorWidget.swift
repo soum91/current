@@ -10,6 +10,14 @@ struct AnchorWidgetBundle: WidgetBundle {
 }
 
 struct AnchorLiveActivityWidget: Widget {
+    private func markerColor(_ context: ActivityViewContext<AnchorAttributes>) -> Color {
+        switch context.state.markerStyle ?? .black {
+        case .black: .black
+        case .transparent: .clear
+        case .gray: .gray
+        }
+    }
+
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: AnchorAttributes.self) { context in
             HStack(spacing: 12) {
@@ -38,11 +46,11 @@ struct AnchorLiveActivityWidget: Widget {
                         .foregroundStyle(.gray)
                 }
             } compactLeading: {
-                Circle().fill(.gray).frame(width: 6, height: 6)
+                Circle().fill(markerColor(context)).frame(width: 6, height: 6)
             } compactTrailing: {
                 EmptyView()
             } minimal: {
-                Circle().fill(.gray).frame(width: 5, height: 5)
+                Circle().fill(markerColor(context)).frame(width: 5, height: 5)
             }
             .widgetURL(URL(string: "currentanchor://open"))
         }
