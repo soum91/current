@@ -1,5 +1,13 @@
 # Changelog
 
+## [build-22] - 2026-11-14
+
+## Verified changes since build-21
+
+- Let Current Anchor marker be black, clear or gray ([`fb9cd9ce`](https://github.com/soum91/current/commit/fb9cd9ceea81a29fbb57d42e99eb7dea451becc2); `AnchorApp/AnchorApp.swift`, `AnchorShared/AnchorAttributes.swift`, `AnchorWidget/AnchorWidget.swift`, and 1 more)
+
+[Inspect exact code changes](https://github.com/soum91/current/compare/build-21...build-22)
+
 ## [build-21] - 2026-11-14
 
 ## Verified changes since build-20
