@@ -22,6 +22,15 @@
       "category": "utilities",
       "versions": [
         {
+          "version": "1.0.0.23",
+          "buildVersion": "23",
+          "date": "2026-11-14",
+          "localizedDescription": "Current network monitor IPA. This build also ships a separate, optional Anchor experiment.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-23/Current-1.0.0-build-23.ipa",
+          "size": 701830,
+          "minOSVersion": "18.0"
+        },
+        {
           "version": "1.0.0.22",
           "buildVersion": "22",
           "date": "2026-11-14",
@@ -207,11 +216,11 @@
           "com.apple.security.application-groups"
         ]
       },
-      "version": "1.0.0.22",
+      "version": "1.0.0.23",
       "versionDate": "2026-11-14",
       "versionDescription": "Current network monitor IPA. This build also ships a separate, optional Anchor experiment.",
-      "downloadURL": "https://github.com/soum91/current/releases/download/build-22/Current-1.0.0-build-22.ipa",
-      "size": 688136
+      "downloadURL": "https://github.com/soum91/current/releases/download/build-23/Current-1.0.0-build-23.ipa",
+      "size": 701830
     },
     {
       "name": "Current Anchor",
@@ -223,6 +232,15 @@
       "tintColor": "#61E8C7",
       "category": "utilities",
       "versions": [
+        {
+          "version": "1.0.0.23",
+          "buildVersion": "23",
+          "date": "2026-11-14",
+          "localizedDescription": "Initial Current Anchor experiment: manual placeholder Live Activity and stop control.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-23/CurrentAnchor-1.0.0-build-23.ipa",
+          "size": 433640,
+          "minOSVersion": "18.0"
+        },
         {
           "version": "1.0.0.22",
           "buildVersion": "22",
@@ -242,11 +260,11 @@
           "minOSVersion": "18.0"
         }
       ],
-      "version": "1.0.0.22",
+      "version": "1.0.0.23",
       "versionDate": "2026-11-14",
       "versionDescription": "Initial Current Anchor experiment: manual placeholder Live Activity and stop control.",
-      "downloadURL": "https://github.com/soum91/current/releases/download/build-22/CurrentAnchor-1.0.0-build-22.ipa",
-      "size": 428168
+      "downloadURL": "https://github.com/soum91/current/releases/download/build-23/CurrentAnchor-1.0.0-build-23.ipa",
+      "size": 433640
     }
   ],
   "news": []
