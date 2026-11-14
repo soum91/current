@@ -1,5 +1,14 @@
 # Changelog
 
+## [build-25] - 2026-11-14
+
+## Verified changes since build-23
+
+- Fix initialization order in Current traffic-triggered Live Activity ([`fd3b4207`](https://github.com/soum91/current/commit/fd3b42078fd8818a863582b0432408b84032b9ae); `Current/Model/SpeedStore.swift`)
+- Keep Current Live Activity armed during idle to restore speeds without background restart ([`6867b0c8`](https://github.com/soum91/current/commit/6867b0c83c6740726e6fc2481e36b26fb4eac4ec); `.github/workflows/build.yml`, `Current/Model/SpeedStore.swift`, `Current/Views/SettingsView.swift`, and 3 more)
+
+[Inspect exact code changes](https://github.com/soum91/current/compare/build-23...build-25)
+
 ## [build-23] - 2026-11-14
 
 ## Verified changes since build-22
