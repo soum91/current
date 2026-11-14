@@ -7,7 +7,8 @@
   "sourceURL": "https://raw.githubusercontent.com/soum91/current/main/source.json",
   "tintColor": "#61E8C7",
   "featuredApps": [
-    "com.soum91.current"
+    "com.soum91.current",
+    "com.soum91.current.anchor"
   ],
   "apps": [
     {
@@ -15,11 +16,20 @@
       "bundleIdentifier": "com.soum91.current",
       "developerName": "soum91",
       "subtitle": "Upload and download speeds at a glance",
-      "localizedDescription": "Current measures Wi-Fi and cellular traffic with configurable sampling, a classic Dynamic Island Live Activity layout and small/medium Home Screen widgets. No location access required. iOS pauses monitoring after Current is suspended. Requires iOS 18 or later. Home Screen widgets require compatible App Group signing.",
+      "localizedDescription": "Current measures Wi-Fi/cellular traffic with configurable sampling and a Dynamic Island Live Activity. Optional Always-location background monitoring is experimental. A separate Current Anchor companion can be installed to test detached-Island behavior. Requires iOS 18 or later.",
       "iconURL": "https://raw.githubusercontent.com/soum91/current/main/Current/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
       "tintColor": "#61E8C7",
       "category": "utilities",
       "versions": [
+        {
+          "version": "1.0.0.21",
+          "buildVersion": "21",
+          "date": "2026-11-14",
+          "localizedDescription": "Current network monitor IPA. This build also ships a separate, optional Anchor experiment.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-21/Current-1.0.0-build-21.ipa",
+          "size": 688214,
+          "minOSVersion": "18.0"
+        },
         {
           "version": "1.0.0.20",
           "buildVersion": "20",
@@ -188,11 +198,37 @@
           "com.apple.security.application-groups"
         ]
       },
-      "version": "1.0.0.20",
-      "versionDate": "2026-11-10",
-      "versionDescription": "Automated build of Current for iPhone.",
-      "downloadURL": "https://github.com/soum91/current/releases/download/build-20/Current-1.0.0-build-20.ipa",
-      "size": 688185
+      "version": "1.0.0.21",
+      "versionDate": "2026-11-14",
+      "versionDescription": "Current network monitor IPA. This build also ships a separate, optional Anchor experiment.",
+      "downloadURL": "https://github.com/soum91/current/releases/download/build-21/Current-1.0.0-build-21.ipa",
+      "size": 688214
+    },
+    {
+      "name": "Current Anchor",
+      "bundleIdentifier": "com.soum91.current.anchor",
+      "developerName": "soum91",
+      "subtitle": "Optional Dynamic Island placement experiment",
+      "localizedDescription": "A separate companion app that starts and stops a minimal placeholder Live Activity. It may cause iOS to show Current in the detached bubble, but placement is not guaranteed. No location tracking, network traffic or background processing. Start and stop manually.",
+      "iconURL": "https://raw.githubusercontent.com/soum91/current/main/Current/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "tintColor": "#61E8C7",
+      "category": "utilities",
+      "versions": [
+        {
+          "version": "1.0.0.21",
+          "buildVersion": "21",
+          "date": "2026-11-14",
+          "localizedDescription": "Initial Current Anchor experiment: manual placeholder Live Activity and stop control.",
+          "downloadURL": "https://github.com/soum91/current/releases/download/build-21/CurrentAnchor-1.0.0-build-21.ipa",
+          "size": 409279,
+          "minOSVersion": "18.0"
+        }
+      ],
+      "version": "1.0.0.21",
+      "versionDate": "2026-11-14",
+      "versionDescription": "Initial Current Anchor experiment: manual placeholder Live Activity and stop control.",
+      "downloadURL": "https://github.com/soum91/current/releases/download/build-21/CurrentAnchor-1.0.0-build-21.ipa",
+      "size": 409279
     }
   ],
   "news": []
