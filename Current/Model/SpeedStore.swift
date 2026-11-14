@@ -27,6 +27,11 @@ final class SpeedStore: ObservableObject {
     @Published private(set) var backgroundLocationActive = false
     @Published private(set) var backgroundLocationStatus = "Off"
     @Published var errorMessage: String?
+    @Published private(set) var lastValidSampleAt: Date?
+    @Published private(set) var lastLocationCallbackAt: Date?
+    @Published private(set) var lastThresholdHitAt: Date?
+    @Published private(set) var lastContentUpdateAt: Date?
+    @Published private(set) var lastSampleElapsedSeconds: Double = 0
 
     /// Optional auto-presentation uses bytes/s regardless of display units.
     @Published var trafficTriggeredIsland: Bool {
@@ -133,7 +138,10 @@ final class SpeedStore: ObservableObject {
     }
 
     private var effectiveSampleInterval: Double {
-        (isInBackground && balancedBackgroundSampling) ? max(sampleInterval, 5.0) : sampleInterval
+        guard isInBackground && balancedBackgroundSampling else { return sampleInterval }
+        // Short transfers often finish between 5s background samples.
+        if trafficTriggeredIsland && !trafficVisible { return max(sampleInterval, 2.0) }
+        return max(sampleInterval, 5.0)
     }
 
     private var effectiveActivityInterval: Double {
@@ -154,14 +162,12 @@ final class SpeedStore: ObservableObject {
     private var trackedActivity: Activity<SpeedActivityAttributes>?
     private var activityStateObserver: Task<Void, Never>?
     private var appearanceUpdateTask: Task<Void, Never>?
-    private var trafficAboveSince: Date?
     private var trafficBelowSince: Date?
     private var lastAutoTransition = Date.distantPast
     private var autoModeManuallyDisabled = false
     private var autoTransitionPending = false
 
     private func resetTrafficTrigger() {
-        trafficAboveSince = nil
         trafficBelowSince = nil
     }
 
@@ -190,20 +196,20 @@ final class SpeedStore: ObservableObject {
         let totalBytesPerSecond = download + upload
         let minimum = trafficThresholdKBps * 1000
         if totalBytesPerSecond >= minimum {
+            lastThresholdHitAt = now
             trafficBelowSince = nil
-            if trafficAboveSince == nil { trafficAboveSince = now }
-            guard !trafficVisible,
-                  now.timeIntervalSince(trafficAboveSince ?? now) >= max(1.0, sampleInterval * 2) else { return }
+            // One above-threshold sample is enough, even in Eco background mode.
+            guard !trafficVisible else { return }
             trafficVisible = true
+            if isMeasuring { restartPollingTask() }
             Task { await updateActivity(force: true) }
         } else {
-            trafficAboveSince = nil
             if trafficBelowSince == nil { trafficBelowSince = now }
             guard trafficVisible,
                   now.timeIntervalSince(trafficBelowSince ?? now) >= trafficIdleTimeout else { return }
             trafficVisible = false
-            // Don't end! Background Activity.request will fail, so the
-            // existing activity must stay live for its speed UI to recover.
+            // Retain the ActivityKit activity and a tiny visible idle marker.
+            if isMeasuring { restartPollingTask() }
             Task { await updateActivity(force: true) }
         }
     }
@@ -240,7 +246,9 @@ final class SpeedStore: ObservableObject {
             if !running && self.isInBackground { self.pauseMeasuring() }
         }
         backgroundLocation.onLocationUpdate = { [weak self] in
-            guard let self, self.isInBackground, self.isMeasuring else { return }
+            guard let self else { return }
+            self.lastLocationCallbackAt = .now
+            guard self.isInBackground, self.isMeasuring else { return }
             self.poll()
         }
         let monitor = NWPathMonitor()
@@ -356,7 +364,11 @@ final class SpeedStore: ObservableObject {
         }
         guard let previous, let previousDate else { return }
         let elapsed = now.timeIntervalSince(previousDate)
-        guard elapsed > 0.05 && elapsed < 10 else { return }
+        lastSampleElapsedSeconds = elapsed
+        // After suspension, delayed wakes can exceed the old 10s cutoff.
+        // This remains an average over elapsed time, not instant throughput.
+        guard elapsed > 0.05 && elapsed <= 120 else { return }
+        lastValidSampleAt = now
 
         let delta = InterfaceSampler.difference(from: previous, to: current)
         download = Double(delta.received) / elapsed
@@ -521,13 +533,14 @@ final class SpeedStore: ObservableObject {
         do {
             let activity = try Activity<SpeedActivityAttributes>.request(
                 attributes: SpeedActivityAttributes(),
-                content: ActivityContent(state: state(), staleDate: .now.addingTimeInterval(12)),
+                content: ActivityContent(state: state(), staleDate: .now.addingTimeInterval(12), relevanceScore: trafficVisible ? 25 : 1),
                 pushType: nil
             )
             track(activity)
             hasLiveActivity = true
             activityStatus = "Requested: \(activity.activityState)"
             lastActivityUpdate = .now
+            lastContentUpdateAt = .now
         } catch {
             errorMessage = "Could not start Live Activity: \(error.localizedDescription)"
             refreshActivityStatus()
@@ -541,7 +554,8 @@ final class SpeedStore: ObservableObject {
         defer { activityUpdatePending = false }
         let content = ActivityContent(
             state: state(),
-            staleDate: isMeasuring ? .now.addingTimeInterval(max(12, effectiveActivityInterval * 2 + 5)) : nil
+            staleDate: isMeasuring ? .now.addingTimeInterval(max(12, effectiveActivityInterval * 2 + 5)) : nil,
+            relevanceScore: trafficVisible ? 25 : 1
         )
         var activities = Activity<SpeedActivityAttributes>.activities.filter(isOngoing)
         if let trackedActivity, isOngoing(trackedActivity),
@@ -556,5 +570,6 @@ final class SpeedStore: ObservableObject {
             await activity.update(content)
         }
         lastActivityUpdate = .now
+        lastContentUpdateAt = .now
     }
 }

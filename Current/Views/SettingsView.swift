@@ -116,7 +116,7 @@ struct SettingsView: View {
                             SectionTitle(text: "On-demand Dynamic Island")
                             Toggle("Auto-hide speed text while idle", isOn: $store.trafficTriggeredIsland)
                                 .tint(Theme.download)
-                            Text("Keeps the Live Activity registered so it can recover in the background. After an idle period its speed text disappears; when traffic returns, the readings come back. iOS may keep the black Island pill visible.")
+                            Text("Keeps the Live Activity registered, with a tiny dark idle marker. One above-threshold sample restores speed text. iOS may still show its black pill and may suspend background monitoring.")
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.58))
                                 .fixedSize(horizontal: false, vertical: true)
@@ -137,7 +137,45 @@ struct SettingsView: View {
                                 Text("60 seconds").tag(60.0)
                             }
                             .pickerStyle(.segmented)
-                            Text("ActivityKit cannot reliably create a fresh Live Activity from ordinary background execution. The existing activity remains armed while idle; Current restores its text when measurements resume. iOS may suspend the app or end the activity after eight hours.")
+                            Text("Balanced background mode requests 2-second sampling while dormant to catch brief transfers. This may use more battery; iOS can still suspend Current or end activities after eight hours.")
+                                .font(.caption)
+                                .foregroundStyle(.orange.opacity(0.88))
+                                .fixedSize(horizontal: false, vertical: true)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("Wake-up status").font(.subheadline.weight(.semibold))
+                                Text(store.trafficVisible ? "Speed text: visible" : "Speed text: dormant")
+                                Text("ActivityKit: \(store.activityStatus)")
+                                Text(store.isMeasuring ? "Sampling: running" : "Sampling: paused")
+                                if let last = store.lastValidSampleAt {
+                                    HStack {
+                                        Text("Network sample")
+                                        Text(last, style: .relative)
+                                    }
+                                } else { Text("Network sample: not yet") }
+                                if let last = store.lastThresholdHitAt {
+                                    HStack {
+                                        Text("Traffic threshold reached")
+                                        Text(last, style: .relative)
+                                    }
+                                } else { Text("Traffic threshold reached: not yet") }
+                                if let last = store.lastContentUpdateAt {
+                                    HStack {
+                                        Text("ActivityKit update requested")
+                                        Text(last, style: .relative)
+                                    }
+                                } else { Text("ActivityKit update requested: not yet") }
+                                if let last = store.lastLocationCallbackAt {
+                                    HStack {
+                                        Text("Location wake callback")
+                                        Text(last, style: .relative)
+                                    }
+                                }
+                                Text("Sample gap \(store.lastSampleElapsedSeconds.formatted(.number.precision(.fractionLength(1)))) s")
+                            }
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.65))
+                            .textSelection(.enabled)
+                            Text("These timestamps show app processing and update requests, not whether iOS rendered them.")
                                 .font(.caption)
                                 .foregroundStyle(.orange.opacity(0.88))
                                 .fixedSize(horizontal: false, vertical: true)

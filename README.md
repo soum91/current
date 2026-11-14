@@ -134,3 +134,7 @@ The standalone Anchor app now offers **Black** (default), **Clear**, and **Gray*
 ### Build 24: idle-to-active recovery
 
 The opt-in traffic-triggered mode now **keeps its Live Activity armed** instead of ending it after the idle threshold. It clears the compact and detached Island speed text while below threshold and restores the text after sustained traffic resumes. This avoids attempting an ActivityKit start from ordinary background execution, which Apple disallows. The background system may still suspend sampling, and Live Activities have a maximum lifetime; iOS may retain the black Island shell even while all text is hidden. The original always-on mode and Current Anchor remain unchanged.
+
+### On-demand wake reliability, next experiment
+
+Current now triggers active speed text after a **single** above-threshold sample instead of two separated samples. With experimental background mode and balanced sampling, it requests an approximately 2-second interval while dormant (vs. 5 seconds while visible). It accepts delayed samples up to 120 seconds but displays averaged rates for long gaps. The widget retains a dark 2-point marker instead of an all-empty view. ActivityKit gets a relevance score of 25 when speeds are visible, or 1 when dormant; Anchor still has higher relevance. Settings reports timestamps for last network sample, threshold hit, location callback, and ActivityKit update request. This is still subject to iOS suspension and Island presentation policy; it cannot guarantee true disappearance/reappearance.

@@ -65,6 +65,15 @@ struct CurrentLiveActivity: Widget {
         }
     }
 
+    // Keep a nonempty low-contrast idle surface, so iOS does not
+    // discard a fully empty minimal presentation.
+    private func idleIndicator() -> some View {
+        Circle()
+            .fill(Color(white: 0.06))
+            .frame(width: 2, height: 2)
+            .accessibilityLabel("Current idle, waiting for traffic")
+    }
+
     private func isFresh(_ context: ActivityViewContext<SpeedActivityAttributes>) -> Bool {
         context.state.isMeasuring && !context.isStale
     }
@@ -72,7 +81,7 @@ struct CurrentLiveActivity: Widget {
     @ViewBuilder
     private func compactLeading(_ context: ActivityViewContext<SpeedActivityAttributes>) -> some View {
         if context.state.trafficVisible == false {
-            EmptyView()
+            idleIndicator()
         } else {
         switch context.state.islandLayout ?? .classic {
         case .classic: classicCompactSpeed(context, down: true)
@@ -85,7 +94,7 @@ struct CurrentLiveActivity: Widget {
     @ViewBuilder
     private func compactTrailing(_ context: ActivityViewContext<SpeedActivityAttributes>) -> some View {
         if context.state.trafficVisible == false {
-            EmptyView()
+            idleIndicator()
         } else {
         switch context.state.islandLayout ?? .classic {
         case .classic: classicCompactSpeed(context, down: false)
@@ -98,7 +107,7 @@ struct CurrentLiveActivity: Widget {
     @ViewBuilder
     private func minimalContent(_ context: ActivityViewContext<SpeedActivityAttributes>) -> some View {
         if context.state.trafficVisible == false {
-            EmptyView()
+            idleIndicator()
         } else if context.state.islandLayout == .custom {
             customMinimalContent(context)
         } else {
