@@ -27,6 +27,32 @@ final class SpeedStore: ObservableObject {
     @Published private(set) var backgroundLocationActive = false
     @Published private(set) var backgroundLocationStatus = "Off"
     @Published var errorMessage: String?
+
+    /// Optional auto-presentation uses bytes/s regardless of display units.
+    @Published var trafficTriggeredIsland: Bool {
+        didSet {
+            UserDefaults.standard.set(trafficTriggeredIsland, forKey: "trafficTriggeredIsland")
+            resetTrafficTrigger()
+        }
+    }
+    @Published var trafficThresholdKBps: Double {
+        didSet {
+            UserDefaults.standard.set(trafficThresholdKBps, forKey: "trafficThresholdKBps")
+            resetTrafficTrigger()
+        }
+    }
+    @Published var trafficIdleTimeout: Double {
+        didSet {
+            UserDefaults.standard.set(trafficIdleTimeout, forKey: "trafficIdleTimeout")
+            resetTrafficTrigger()
+        }
+    }
+    @Published var quietLockScreen: Bool {
+        didSet {
+            UserDefaults.standard.set(quietLockScreen, forKey: "currentQuietLockScreen")
+            Task { await updateActivity(force: true) }
+        }
+    }
     @Published var unit: SpeedUnit {
         didSet {
             UserDefaults.standard.set(unit.rawValue, forKey: "speedUnit")
@@ -120,8 +146,70 @@ final class SpeedStore: ObservableObject {
     private var trackedActivity: Activity<SpeedActivityAttributes>?
     private var activityStateObserver: Task<Void, Never>?
     private var appearanceUpdateTask: Task<Void, Never>?
+    private var trafficAboveSince: Date?
+    private var trafficBelowSince: Date?
+    private var lastAutoTransition = Date.distantPast
+    private var autoTransitionPending = false
+
+    private func resetTrafficTrigger() {
+        trafficAboveSince = nil
+        trafficBelowSince = nil
+        lastAutoTransition = .distantPast
+    }
+
+    /// Intentionally never requests a new Live Activity from background execution.
+    /// ActivityKit requires a foreground app or a system-initiated LiveActivityIntent.
+    private func updateTrafficPresentation(now: Date) {
+        guard trafficTriggeredIsland, isMeasuring, !activityTransitioning, !autoTransitionPending else { return }
+        let totalBytesPerSecond = download + upload
+        let minimum = trafficThresholdKBps * 1000
+        if totalBytesPerSecond >= minimum {
+            trafficBelowSince = nil
+            if trafficAboveSince == nil { trafficAboveSince = now }
+            guard !hasLiveActivity,
+                  !isInBackground,
+                  now.timeIntervalSince(trafficAboveSince ?? now) >= max(1.0, sampleInterval * 2),
+                  now.timeIntervalSince(lastAutoTransition) >= 3 else { return }
+            autoTransitionPending = true
+            Task { [weak self] in
+                guard let self else { return }
+                defer { self.autoTransitionPending = false }
+                guard !self.activityTransitioning, !self.hasLiveActivity else { return }
+                self.activityTransitioning = true
+                defer {
+                    self.activityTransitioning = false
+                    self.lastAutoTransition = .now
+                }
+                await self.requestLiveActivity()
+            }
+        } else {
+            trafficAboveSince = nil
+            if trafficBelowSince == nil { trafficBelowSince = now }
+            guard hasLiveActivity,
+                  now.timeIntervalSince(trafficBelowSince ?? now) >= trafficIdleTimeout,
+                  now.timeIntervalSince(lastAutoTransition) >= 3 else { return }
+            autoTransitionPending = true
+            Task { [weak self] in
+                guard let self else { return }
+                defer { self.autoTransitionPending = false }
+                guard !self.activityTransitioning, self.hasLiveActivity else { return }
+                self.activityTransitioning = true
+                defer {
+                    self.activityTransitioning = false
+                    self.lastAutoTransition = .now
+                }
+                await self.endLiveActivities()
+            }
+        }
+    }
 
     init() {
+        self.trafficTriggeredIsland = UserDefaults.standard.bool(forKey: "trafficTriggeredIsland")
+        let savedThreshold = UserDefaults.standard.double(forKey: "trafficThresholdKBps")
+        self.trafficThresholdKBps = [1.0, 10.0, 50.0, 100.0, 500.0].contains(savedThreshold) ? savedThreshold : 10.0
+        let savedIdleTimeout = UserDefaults.standard.double(forKey: "trafficIdleTimeout")
+        self.trafficIdleTimeout = [5.0, 15.0, 30.0, 60.0].contains(savedIdleTimeout) ? savedIdleTimeout : 15.0
+        self.quietLockScreen = UserDefaults.standard.bool(forKey: "currentQuietLockScreen")
         self.unit = SpeedUnit(rawValue: UserDefaults.standard.string(forKey: "speedUnit") ?? "bytes") ?? .bytes
         let savedSampleInterval = UserDefaults.standard.double(forKey: "sampleInterval")
         self.sampleInterval = [0.25, 0.5, 1.0, 2.0].contains(savedSampleInterval) ? savedSampleInterval : 0.5
@@ -272,6 +360,7 @@ final class SpeedStore: ObservableObject {
         samples.removeAll { now.timeIntervalSince($0.time) > 60 }
 
         publishWidgetSnapshot()
+        updateTrafficPresentation(now: now)
 
         if hasLiveActivity && now.timeIntervalSince(lastActivityUpdate) >= effectiveActivityInterval {
             Task { await updateActivity() }
@@ -310,7 +399,8 @@ final class SpeedStore: ObservableObject {
               trailingTemplate: IslandTemplate.limited(trailingTemplate),
               minimalTopTemplate: IslandTemplate.limited(minimalTopTemplate),
               minimalBottomTemplate: IslandTemplate.limited(minimalBottomTemplate),
-              customTextSize: customTextSize)
+              customTextSize: customTextSize,
+              quietLockScreen: quietLockScreen)
     }
 
     private func scheduleAppearanceUpdate() {

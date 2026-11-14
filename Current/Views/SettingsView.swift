@@ -113,6 +113,44 @@ struct SettingsView: View {
                         .card()
 
                         VStack(alignment: .leading, spacing: 12) {
+                            SectionTitle(text: "On-demand Dynamic Island")
+                            Toggle("Only show when network traffic is active", isOn: $store.trafficTriggeredIsland)
+                                .tint(Theme.download)
+                            Text("Activity starts after traffic exceeds the threshold for at least a second. It ends after sustained idle traffic. Uses download + upload bytes per second, independent of display units.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.58))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text("Minimum combined traffic").font(.subheadline.weight(.semibold))
+                            Picker("Minimum traffic", selection: $store.trafficThresholdKBps) {
+                                Text("1 KB/s").tag(1.0)
+                                Text("10 KB/s").tag(10.0)
+                                Text("50 KB/s").tag(50.0)
+                                Text("100 KB/s").tag(100.0)
+                                Text("500 KB/s").tag(500.0)
+                            }
+                            .pickerStyle(.menu)
+                            Text("End after idle").font(.subheadline.weight(.semibold))
+                            Picker("Idle timeout", selection: $store.trafficIdleTimeout) {
+                                Text("5 seconds").tag(5.0)
+                                Text("15 seconds").tag(15.0)
+                                Text("30 seconds").tag(30.0)
+                                Text("60 seconds").tag(60.0)
+                            }
+                            .pickerStyle(.segmented)
+                            Text("Important: when Current is backgrounded, iOS may suspend sampling. A ended Live Activity cannot reliably auto-restart until Current returns to the foreground. Leave this off for the original always-visible Island behavior.")
+                                .font(.caption)
+                                .foregroundStyle(.orange.opacity(0.88))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Toggle("Quiet Lock Screen (experimental)", isOn: $store.quietLockScreen)
+                                .tint(Theme.download)
+                            Text("Nearly empty content only. iOS can still show an empty Live Activity card; the app cannot suppress Lock Screen presentation separately.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.48))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .card()
+
+                        VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "Experimental background monitoring")
                             Toggle("Keep monitoring outside Current", isOn: $store.backgroundModeEnabled)
                                 .tint(Theme.download)

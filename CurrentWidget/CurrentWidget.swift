@@ -22,9 +22,14 @@ struct CurrentWidgetBundle: WidgetBundle {
 struct CurrentLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SpeedActivityAttributes.self) { context in
+            if context.state.quietLockScreen == true {
+                Color.clear.frame(height: 1)
+                    .activityBackgroundTint(.clear)
+            } else {
             lockScreen(context)
                 .activityBackgroundTint(Color(red: 0.04, green: 0.07, blue: 0.09))
                 .activitySystemActionForegroundColor(.white)
+            }
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.center) {

@@ -124,7 +124,11 @@ jobs:
           name: Current + Anchor ${{ steps.ipa.outputs.display_version }}
           make_latest: true
           body: |
-            New: separate Current Anchor experiment (second iOS bundle ID and widget).
+            Current Anchor adds Zero-size placeholder rendering and optional quiet Lock Screen content.
+            Current adds an opt-in traffic-triggered Live Activity with configurable traffic and idle thresholds.
+            The working two-line speed display and classic modes remain unchanged.
+
+            Existing capability: separate Current Anchor experiment (second iOS bundle ID and widget).
             Anchor starts/stops a tiny placeholder Live Activity to test whether
             iOS places Current in its detached Dynamic Island bubble.
             The original Current networking and Island implementation are unchanged.

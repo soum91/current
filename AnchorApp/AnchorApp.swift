@@ -26,6 +26,12 @@ final class AnchorController: ObservableObject {
     @Published private(set) var busy = false
     @Published private(set) var status = "Off"
     @Published var error: String?
+    @Published var quietLockScreen: Bool {
+        didSet {
+            UserDefaults.standard.set(quietLockScreen, forKey: "anchorQuietLockScreen")
+            Task { await refreshMarkerAppearance() }
+        }
+    }
     @Published var markerStyle: AnchorMarkerStyle {
         didSet {
             UserDefaults.standard.set(markerStyle.rawValue, forKey: "anchorMarkerStyle")
@@ -35,6 +41,7 @@ final class AnchorController: ObservableObject {
     }
 
     init() {
+        quietLockScreen = UserDefaults.standard.bool(forKey: "anchorQuietLockScreen")
         markerStyle = AnchorMarkerStyle(
             rawValue: UserDefaults.standard.string(forKey: "anchorMarkerStyle") ?? "black"
         ) ?? .black
@@ -45,7 +52,8 @@ final class AnchorController: ObservableObject {
             activity.activityState == .active || activity.activityState == .stale {
             let updated = AnchorAttributes.ContentState(
                 startedAt: activity.content.state.startedAt,
-                markerStyle: markerStyle
+                markerStyle: markerStyle,
+                quietLockScreen: quietLockScreen
             )
             await activity.update(ActivityContent(
                 state: updated,
@@ -84,7 +92,7 @@ final class AnchorController: ObservableObject {
             let activity = try Activity<AnchorAttributes>.request(
                 attributes: AnchorAttributes(),
                 content: ActivityContent(
-                    state: .init(startedAt: .now, markerStyle: markerStyle),
+                    state: .init(startedAt: .now, markerStyle: markerStyle, quietLockScreen: quietLockScreen),
                     staleDate: nil,
                     relevanceScore: 100
                 ),
@@ -157,12 +165,20 @@ private struct AnchorView: View {
                         }
                         .pickerStyle(.segmented)
 
-                        Text("Black blends into the Island. Clear draws no visible dot but keeps its space; Gray restores the original. These choices cannot shrink or hide the system's black Island background.")
+                        Text("Zero draws no leading or trailing content. Black and Clear retain a tiny dot-sized footprint. If Zero stops the activity from appearing, switch back to Black. iOS controls the pill's minimum size.")
                             .font(.caption)
                             .foregroundStyle(.gray)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, 4)
+
+                    Toggle("Quiet Lock Screen (experimental)", isOn: $model.quietLockScreen)
+                        .tint(.mint)
+                    Text("Attempts a nearly empty Lock Screen view. iOS can still show a blank Live Activity card; the app cannot disable Lock Screen presentation independently of the Dynamic Island.")
+                        .font(.caption)
+                        .foregroundStyle(.gray)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     Text("Starts a tiny, neutral placeholder activity. If iOS chooses to show two apps, the regular Current speed meter may appear in the detached Island bubble.")
                         .foregroundStyle(.white.opacity(0.75))
                         .fixedSize(horizontal: false, vertical: true)

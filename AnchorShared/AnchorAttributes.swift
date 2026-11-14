@@ -6,6 +6,7 @@ struct AnchorAttributes: ActivityAttributes {
         let startedAt: Date
         // Optional to keep activities from the first Anchor build decodable.
         var markerStyle: AnchorMarkerStyle?
+        var quietLockScreen: Bool?
     }
     var label: String = "Current Anchor experiment"
 }
@@ -13,6 +14,7 @@ struct AnchorAttributes: ActivityAttributes {
 enum AnchorMarkerStyle: String, Codable, CaseIterable, Identifiable {
     case black
     case transparent
+    case empty
     case gray
 
     var id: String { rawValue }
@@ -20,6 +22,7 @@ enum AnchorMarkerStyle: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .black: "Black"
         case .transparent: "Clear"
+        case .empty: "Zero"
         case .gray: "Gray"
         }
     }

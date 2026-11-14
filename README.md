@@ -123,3 +123,10 @@ secondary numeric readout are unchanged by this experiment.
 ### Anchor marker appearance
 
 The standalone Anchor app now offers **Black** (default), **Clear**, and **Gray** marker styles. Black blends into the system-owned black pill; Clear renders a fully transparent marker inside an unchanged 5–6 pt view. Both preserve the activity's layout footprint and cannot remove or resize the system Dynamic Island. You can change the marker while Anchor is already running without restarting Current. Gray is the original visible-dot fallback. The Current network-monitor target is unchanged.
+
+## Experimental zero-footprint Anchor and traffic-triggered Current
+
+- **Current Anchor** has a fourth marker style, **Zero**, which requests an `EmptyView` for both compact-leading and minimal Island presentations. The system may reserve the same black hardware pill or not display the empty activity. Black is retained as the safe default.
+- Both apps offer optional **Quiet Lock Screen** rendering. This makes the activity's Lock Screen content almost empty and requests a clear background. iOS may still render a blank system card: there is no supported Dynamic-Island-only Live Activity flag.
+- **Current** has an opt-in on-demand Live Activity mode. It samples total download + upload traffic in bytes/s. Configurable trigger thresholds are 1, 10, 50, 100 or 500 KB/s; configurable idle delays are 5, 15, 30 or 60 seconds. A sustained 1-second rise starts the activity while the app is foregrounded; sustained idle traffic ends it immediately.
+- Background auto-restart is not guaranteed: ActivityKit normally requires the foreground app (or a system-invoked LiveActivityIntent) to create a Live Activity. Traffic measurements and the optional location session do not override that requirement. Leave on-demand mode disabled for original always-on behavior.

@@ -16,6 +16,7 @@ struct SpeedActivityAttributes: ActivityAttributes {
         var minimalTopTemplate: String?
         var minimalBottomTemplate: String?
         var customTextSize: Double?
+        var quietLockScreen: Bool?
     }
 
     var label: String = "Network speed"
