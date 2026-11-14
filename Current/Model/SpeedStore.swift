@@ -209,8 +209,9 @@ final class SpeedStore: ObservableObject {
     }
 
     init() {
-        self.trafficTriggeredIsland = UserDefaults.standard.bool(forKey: "trafficTriggeredIsland")
-        self.trafficVisible = !self.trafficTriggeredIsland
+        let savedTrafficTrigger = UserDefaults.standard.bool(forKey: "trafficTriggeredIsland")
+        self.trafficTriggeredIsland = savedTrafficTrigger
+        self.trafficVisible = !savedTrafficTrigger
         let savedThreshold = UserDefaults.standard.double(forKey: "trafficThresholdKBps")
         self.trafficThresholdKBps = [1.0, 10.0, 50.0, 100.0, 500.0].contains(savedThreshold) ? savedThreshold : 10.0
         let savedIdleTimeout = UserDefaults.standard.double(forKey: "trafficIdleTimeout")
